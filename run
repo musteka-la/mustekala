@@ -1,0 +1,13 @@
+#!/bin/bash
+
+CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+## Shamelessly overwrite this geth library
+sed -i '' "s/maxActiveDialTasks = 16/maxActiveDialTasks = 100000/" $GOPATH/src/github.com/ethereum/go-ethereum/p2p/server.go
+
+mkdir -p $GOPATH/src/github.com/hermanjunge/
+rm -rf $GOPATH/src/github.com/hermanjunge/devp2p-concept
+cp -R $CURRENT_DIR $GOPATH/src/github.com/hermanjunge/devp2p-concept
+
+cd $GOPATH/src/github.com/hermanjunge/devp2p-concept
+go build -v -o ejemplo *.go && ./ejemplo "$@"
