@@ -8,7 +8,7 @@ to get the data as hot as it comes.
 ### Very Quick Start
 
 ```
-./run --bootnodes ./config/bootnodes-devp2p
+./run --devp2p-bootnodes ./config/bootnodes-devp2p
 ```
 
 **Moar** Tracing with `bridge-debug`
