@@ -3,6 +3,7 @@ package devp2p
 import (
 	"fmt"
 	"io"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -27,9 +28,11 @@ const (
 	ReceiptsMsg    = 0x10
 
 	// ethereum relevant information
-	ByzantiumBlockNumber = 4370000
-	ByzantiumBlockHash   = 0xb1fcff633029ee18ab6482b58ff8b6e95dd7c82a954c852157152a7a6d32785e
+	ByzantiumBlockNumber  = 4370000
+	ByzantiumBlockHashStr = "0xb1fcff633029ee18ab6482b58ff8b6e95dd7c82a954c852157152a7a6d32785e"
 )
+
+var ByzantiumBlockNumberBigInt = big.NewInt(ByzantiumBlockNumber)
 
 // hashOrNumber is a combined field for specifying an origin block.
 type hashOrNumber struct {

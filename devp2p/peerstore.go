@@ -12,7 +12,7 @@ import (
 
 // PeerStore keeps track of the ethereum peers after a succesful
 // handshake (i.e. a match in protocols and version).
-// It is also, able to tell the best nodes based on their difficulties (td).
+// It is also able to tell the best nodes based on their difficulties (td).
 type peerStore struct {
 	lock sync.RWMutex
 
@@ -63,7 +63,7 @@ func (b byTD) Swap(i, j int) {
 }
 
 func (b byTD) Less(i, j int) bool {
-	// Reverse the sorting. We want to have at the head
+	// reverse the sorting. We want to have at the head
 	// of this index the peers with the most total difficulty
 	if b[i].td.Cmp(b[j].td) == 1 {
 		return true
@@ -132,10 +132,9 @@ func (p *peerStore) nextPeer() *Peer {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
-	// Easier to read shorthand
+	// easier to read shorthand
 	s := p.sortedIndexByTD
 
-	// Now we run the picker
 	for i := 0; i < len(s)-1; i++ {
 		if s[i].nextPeerTimesPicked < s[i+1].nextPeerTimesPicked {
 			s[i].nextPeerTimesPicked++

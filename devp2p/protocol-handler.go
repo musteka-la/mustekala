@@ -3,7 +3,6 @@ package devp2p
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/p2p"
 )
 
@@ -13,7 +12,7 @@ import (
 // Also, it establishes a permanent loop to manage its incoming messages.
 // On error, the permanent loop closes, and the peer is removed from the peerstore.
 func (m *Manager) protocolHandler(p *p2p.Peer, rw p2p.MsgReadWriter) error {
-	// This peer is formatted as an eth peer
+	// this peer is formatted as an eth peer
 	ethPeer := &Peer{
 		id: p.String(),
 		rw: rw,
@@ -24,17 +23,17 @@ func (m *Manager) protocolHandler(p *p2p.Peer, rw p2p.MsgReadWriter) error {
 		return err
 	}
 
-	// In the lifecycle of a peer, after the ethereum handshake is succesful,
+	// in the lifecycle of a peer, after the ethereum handshake is succesful,
 	// we add this peer into our store, which will make them indirectly available
 	// to the caller of the manager, to do requests to the devp2p network.
-	// Once the loop for this connection (implemented below) is broke, the peer
+	// once the loop for this connection (implemented below) is broke, the peer
 	// will be removed from the store.
 	m.peerstore.add(ethPeer)
 	defer m.peerstore.remove(ethPeer)
 
-	// We don't want peers that aren't in the byzantium hard fork.
-	// We will send a message to the peer asking for its block
-	// We have logic inside handleIncomingMsg() to deal with this specific block header.
+	// we don't want peers that aren't in the byzantium hard fork.
+	// we will send a message to the peer asking for its block
+	// we have logic inside handleIncomingMsg() to deal with this specific block header.
 	p2p.Send(ethPeer.rw,
 		GetBlockHeadersMsg,
 		&getBlockHeadersData{
@@ -45,7 +44,7 @@ func (m *Manager) protocolHandler(p *p2p.Peer, rw p2p.MsgReadWriter) error {
 			Reverse: true,
 		})
 
-	// This is a permanent loop, it waits for the p2p library to ReadMsg()
+	// this is a permanent loop, it waits for the p2p library to ReadMsg()
 	// and then switches over the code of the message (New block, Get receipts, etc, etc)
 	// for further processing. This loop is broken at the first error,
 	// triggering the removal of the peer from our store also.
@@ -83,40 +82,18 @@ func (m *Manager) handleIncomingMsg(peer *Peer) error {
 		log.Debug("NewBlockHashes", "peer", peer.id)
 		return fmt.Errorf("not Implemented")
 
-	// This is the Broadcast message of a Transaction
+	// this is the Broadcast message of a Transaction
 	case msg.Code == TxMsg:
 		log.Debug("Tx", "peer", peer.id)
 		return fmt.Errorf("not Implemented")
 
 	case msg.Code == GetBlockHeadersMsg:
 		log.Debug("GetBlockHeaders", "peer", peer.id)
-
-		// TEST
-		fmt.Printf("Payload:\n%x\n--------\n", msg.Payload)
-		// TEST
-
-		// For now, we only respond with an empty header slice.
-		// In the future we want to respond with info from our bridge.
-		headers := make([]*types.Header, 0)
-		return p2p.Send(peer.rw, BlockHeadersMsg, headers)
+		return m.handleGetBlockHeaderMsg(peer, &msg)
 
 	case msg.Code == BlockHeadersMsg:
 		log.Debug("BlockHeaders", "peer", peer.id)
-
-		var headers []*types.Header
-		if err := msg.Decode(&headers); err != nil {
-			return fmt.Errorf("Error Decoding message: %v %v", msg, err)
-		}
-
-		// in protocolHandler() we shot a request for the byzantium block
-		// If we have that response here, let's check it up
-		// TODO
-
-		// DEBUG
-		fmt.Printf("Got from BlockHeaders:\n %v\n-----\n", headers)
-		// DEBUG
-
-		return fmt.Errorf("not Implemented (WIP)")
+		return m.handleBlockHeaderMsg(peer, &msg)
 
 	case msg.Code == GetBlockBodiesMsg:
 		log.Debug("GetBlockBodies", "peer", peer.id)

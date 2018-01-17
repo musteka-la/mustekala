@@ -9,7 +9,7 @@ func (m *Manager) consumeToDevP2PChan() {
 	toDevP2PChan := m.toDevP2PChan
 
 	for {
-		// Blocks until it gets a message
+		// blocks until it gets a message
 		msg := <-toDevP2PChan
 		// TODO
 		// IMPLEMENT

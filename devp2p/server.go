@@ -59,8 +59,8 @@ func getPrivateKey(filePath string) *ecdsa.PrivateKey {
 	// PLACEHOLDER
 
 	// TODO
-	// If error, zero tolerance (you don't wanna delete that key file)
-	// If empty, just randomize one
+	// if error, zero tolerance (you don't wanna delete that key file)
+	// if empty, just randomize one
 
 	return privateKey
 }

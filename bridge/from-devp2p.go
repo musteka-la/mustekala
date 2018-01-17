@@ -5,11 +5,11 @@ package bridge
 func (b *Bridge) consumeFromDevP2PChan() {
 	log.Debug("consuming fromdevp2p channel")
 
-	// Easy to read shorthand
+	// easy to read shorthand
 	fromDevP2PChan := b.Channels.FromDevP2P
 
 	for {
-		// Blocks until it gets a message
+		// blocks until it gets a message
 		msg := <-fromDevP2PChan
 		// TODO
 		// IMPLEMENT

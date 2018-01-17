@@ -22,6 +22,7 @@ const (
 )
 
 // headerSyncStatus works the following way:
+//
 // * requested block header is one we asked the networks to fetch for us, example, block 156,034.
 // * arrived block header means that we have it, useful for the loop to evaluate it.
 // * valid means that the block header information is consistent with its hash, and its parent corresponds
@@ -57,12 +58,12 @@ type header struct {
 func (b *Bridge) launchHotImporter() {
 	log.Info("launching hot importer")
 
-	// Init the hot importer variables
+	// init the hot importer variables
 	b.hotImporter = &hotImporter{
 		headers:     make(map[int]header),
 		pivotHeader: MIN_BLOCK_NUMBER,
 	}
 
-	// Get the blockchain headers
+	// get the blockchain headers
 	go b.headerLoop()
 }
