@@ -80,12 +80,12 @@ func (m *Manager) handleIncomingMsg(peer *Peer) error {
 
 	case msg.Code == NewBlockHashesMsg:
 		log.Debug("NewBlockHashes", "peer", peer.id)
-		return fmt.Errorf("not Implemented")
+		return fmt.Errorf("not Implemented: NewBlockHashes")
 
 	// this is the Broadcast message of a Transaction
 	case msg.Code == TxMsg:
 		log.Debug("Tx", "peer", peer.id)
-		return fmt.Errorf("not Implemented")
+		return fmt.Errorf("not Implemented: Tx")
 
 	case msg.Code == GetBlockHeadersMsg:
 		log.Debug("GetBlockHeaders", "peer", peer.id)
@@ -97,32 +97,32 @@ func (m *Manager) handleIncomingMsg(peer *Peer) error {
 
 	case msg.Code == GetBlockBodiesMsg:
 		log.Debug("GetBlockBodies", "peer", peer.id)
-		return fmt.Errorf("not Implemented")
+		return fmt.Errorf("not Implemented: GetBlockBodies")
 
 	case msg.Code == BlockBodiesMsg:
 		log.Debug("BlockBodies", "peer", peer.id)
-		return fmt.Errorf("not Implemented")
+		return fmt.Errorf("not Implemented: BlockBodies")
 
 	// This is the Broadcast message of a Block
 	case msg.Code == NewBlockMsg:
 		log.Debug("NewBlock", "peer", peer.id)
-		return fmt.Errorf("not Implemented")
+		return fmt.Errorf("not Implemented: NewBlock")
 
 	case msg.Code == GetNodeDataMsg:
 		log.Debug("GetNodeData", "peer", peer.id)
-		return fmt.Errorf("not Implemented")
+		return fmt.Errorf("not Implemented: GetNodeData")
 
 	case msg.Code == NodeDataMsg:
 		log.Debug("NodeData", "peer", peer.id)
-		return fmt.Errorf("not Implemented")
+		return fmt.Errorf("not Implemented: NodeData")
 
 	case msg.Code == GetReceiptsMsg:
 		log.Debug("GetReceipts", "peer", peer.id)
-		return fmt.Errorf("not Implemented")
+		return fmt.Errorf("not Implemented: GetReceipts")
 
 	case msg.Code == ReceiptsMsg:
 		log.Debug("Receipts", "peer", peer.id)
-		return fmt.Errorf("not Implemented")
+		return fmt.Errorf("not Implemented: Receipts")
 
 	default:
 		return fmt.Errorf("message code not supported")
