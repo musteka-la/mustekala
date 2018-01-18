@@ -94,16 +94,18 @@ func (p *Peer) readStatusMsg() error {
 	}
 
 	// ethereum handshake checks: genesis block, network and version
-	if theirStatus.GenesisBlock != ourStatus.GenesisBlock {
-		return fmt.Errorf("genesis block mismatch: %x (!= %x)",
-			theirStatus.GenesisBlock[:8],
-			ourStatus.GenesisBlock[:8])
-	}
 	if theirStatus.NetworkId != ourStatus.NetworkId {
 		return fmt.Errorf("network mismatch: %d (!= %d)",
 			theirStatus.NetworkId,
 			ourStatus.NetworkId)
 	}
+
+	if theirStatus.GenesisBlock != ourStatus.GenesisBlock {
+		return fmt.Errorf("genesis block mismatch: %x (!= %x)",
+			theirStatus.GenesisBlock[:8],
+			ourStatus.GenesisBlock[:8])
+	}
+
 	if int(theirStatus.ProtocolVersion) != int(ourStatus.ProtocolVersion) {
 		return fmt.Errorf("protocol version mismatch: %d (!= %d)",
 			theirStatus.ProtocolVersion,
