@@ -12,6 +12,7 @@ package devp2p
 // 	"github.com/hermanjunge/devp2p-concept/bridge"
 // )
 
+/*
 type peerData struct {
   responsive bool
   networkId int
@@ -32,3 +33,4 @@ func (this *myMetrics) addMetric(peerId string, data *peerData) {
 
   this.data[peerId]
 }
+*/

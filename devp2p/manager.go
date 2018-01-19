@@ -23,7 +23,7 @@ type Manager struct {
 	toDevP2PChan   chan bridge.Message
 	fromDevP2PChan chan bridge.Message
 
-	peerstore *peerStore
+	peerstore *peerstore.PeerStore
 }
 
 // Config is the configuration object for DevP2P
@@ -73,7 +73,7 @@ func NewManager(br *bridge.Bridge, config Config) *Manager {
 	manager.toDevP2PChan = br.Channels.ToDevP2P
 	manager.fromDevP2PChan = br.Channels.FromDevP2P
 
-	manager.peerstore = newPeerStore()
+	manager.peerstore = peerstore.NewPeerStore()
 
 	manager.server = manager.newServer(config)
 
