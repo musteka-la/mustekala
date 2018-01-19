@@ -44,6 +44,9 @@ func (m *Manager) protocolHandler(p *p2p.Peer, rw p2p.MsgReadWriter) error {
 			Reverse: true,
 		})
 
+	// this counter becomes 1
+	ethPeer.sentRequestsCnt = 1
+
 	// this is a permanent loop, it waits for the p2p library to ReadMsg()
 	// and then switches over the code of the message (New block, Get receipts, etc, etc)
 	// for further processing. This loop is broken at the first error,
