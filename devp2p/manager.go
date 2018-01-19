@@ -80,6 +80,8 @@ func NewManager(br *bridge.Bridge, config Config) *Manager {
 
 	manager.peerstore = newPeerStore()
 
+	manager.networkStatus = newNetworkStatus()
+
 	manager.server = manager.newServer(config)
 
 	return manager

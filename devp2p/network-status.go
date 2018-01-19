@@ -1,45 +1,28 @@
 package devp2p
 
-// import (
-// 	"bufio"
-// 	"fmt"
-// 	"os"
-//
-// 	"github.com/ethereum/go-ethereum/p2p"
-// 	"github.com/ethereum/go-ethereum/p2p/discover"
-// 	logging "github.com/ipfs/go-log"
-//
-// )
+import "sync"
 
-/*
-type peerData struct {
-  responsive bool
-  networkId int
-  GenesisBlock string
-  isByzantine bool
-}
-
-type myMetrics struct {
-  data map[string] peerData
-  lock sync.RWMutex
-}
-
-// metrics := make(map[string] peerData)
-
-func (this *myMetrics) addMetric(peerId string, data *peerData) {
-  this.lock.Lock()
-  defer this.lock.Unlock()
-
-  this.data[peerId]
-}
-*/
-
+// networkStatus is the object that will give you the peers we have seen
+// and some useful stats
 type networkStatus struct {
+	lock  sync.RWMutex
+	peers map[string]*peerNetworkStatus
 }
 
+// peerNetworkStatus is the n-tuple of the networkStatus object
 type peerNetworkStatus struct {
 }
 
+// newNetworkStatus is the networkStatus constructor
+func newNetworkStatus() *networkStatus {
+	return &networkStatus{
+		peers: make(map[string]*peerNetworkStatus),
+	}
+}
+
+// insertOrUpdate is the main function of the networkStatus object
 func (n *networkStatus) insertOrUpdate(p peerNetworkStatus) {
+	n.lock.Lock()
+	defer n.lock.Unlock()
 
 }
