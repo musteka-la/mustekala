@@ -9,7 +9,6 @@ package devp2p
 // 	"github.com/ethereum/go-ethereum/p2p/discover"
 // 	logging "github.com/ipfs/go-log"
 //
-// 	"github.com/hermanjunge/devp2p-concept/bridge"
 // )
 
 /*
@@ -34,3 +33,13 @@ func (this *myMetrics) addMetric(peerId string, data *peerData) {
   this.data[peerId]
 }
 */
+
+type networkStatus struct {
+}
+
+type peerNetworkStatus struct {
+}
+
+func (n *networkStatus) insertOrUpdate(p peerNetworkStatus) {
+
+}

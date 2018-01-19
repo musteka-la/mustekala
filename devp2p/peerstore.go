@@ -10,10 +10,10 @@ import (
 	"github.com/ethereum/go-ethereum/p2p"
 )
 
-// PeerStore keeps track of the ethereum peers after a succesful
+// peerStore keeps track of the ethereum peers after a succesful
 // handshake (i.e. a match in protocols and version).
 // It is also able to tell the best nodes based on their difficulties (td).
-type PeerStore struct {
+type peerStore struct {
 	lock sync.RWMutex
 
 	peers map[string]*Peer
@@ -75,17 +75,17 @@ func (b byTD) Less(i, j int) bool {
 // PEERSTORE CONSTRUCTOR
 ////////////////////////////////////////////////////////////////////////////////
 
-// NewPeerStore prepares the peerstore of this library
-func NewPeerStore() *peerStore {
+// newPeerStore prepares the peerstore of this library
+func newPeerStore() *peerStore {
 	return &peerStore{
 		peers:           make(map[string]*Peer),
 		sortedIndexByTD: make([]*Peer, 0),
 	}
 }
 
-// Add includes a peer into the peerstore and recalculate the
+// add includes a peer into the peerstore and recalculate the
 // latter's sorted index by total difficulty
-func (p *peerStore) Add(peer *Peer) {
+func (p *peerStore) add(peer *Peer) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
@@ -99,7 +99,7 @@ func (p *peerStore) Add(peer *Peer) {
 
 // rRmove excludes a peer from the peerstore, recalculating
 // the sorting index by total difficulty
-func (p *peerStore) Remove(peer *Peer) {
+func (p *peerStore) remove(peer *Peer) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
@@ -118,7 +118,7 @@ func (p *peerStore) Remove(peer *Peer) {
 
 // capacity returns the number of peers available to make requests,
 // and the timestamp the request was made.
-func (p *peerStore) cCpacity() (int, int64) {
+func (p *peerStore) capacity() (int, int64) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
@@ -128,7 +128,7 @@ func (p *peerStore) cCpacity() (int, int64) {
 // nextPeer returns the next best peer to send a request.
 // Peers are sorted by total difficulty and picked by
 // number of times a peer has been returned by this very function.
-func (p *peerStore) NextPeer() *Peer {
+func (p *peerStore) nextPeer() *Peer {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 

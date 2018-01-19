@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/discover"
 	logging "github.com/ipfs/go-log"
 
-	"github.com/hermanjunge/devp2p-concept/bridge"
+	"github.com/metamask/eth-ipld-hot-importer/bridge"
 )
 
 var log = logging.Logger("devp2p")
@@ -23,7 +23,9 @@ type Manager struct {
 	toDevP2PChan   chan bridge.Message
 	fromDevP2PChan chan bridge.Message
 
-	peerstore *peerstore.PeerStore
+	peerstore *peerStore
+
+	networkStatus *networkStatus
 }
 
 // Config is the configuration object for DevP2P
@@ -51,6 +53,9 @@ type Config struct {
 // * sets up the peerstore, which , among other things,
 //   keeps track of the best available peer to send a message.
 //
+// * sets up the network status object, we can retrieve some stats here
+//   for further analysis.
+//
 // * sets up the server. See manager.protocolHandler() and handlerIncomingMsg()
 //   to understand a peer's lifecycle and the receiving of
 //   devp2p messages and sending to the bridge.
@@ -73,7 +78,7 @@ func NewManager(br *bridge.Bridge, config Config) *Manager {
 	manager.toDevP2PChan = br.Channels.ToDevP2P
 	manager.fromDevP2PChan = br.Channels.FromDevP2P
 
-	manager.peerstore = peerstore.NewPeerStore()
+	manager.peerstore = newPeerStore()
 
 	manager.server = manager.newServer(config)
 

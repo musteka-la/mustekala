@@ -43,8 +43,8 @@ func getOurStatusData() *statusData {
 	return ourStatus
 }
 
-// sendStatusMsg initiates the ethereum handshake, sending the status message.
-func (p *Peer) sendStatusMsg() error {
+// DoEthereumHandshake initiates the ethereum handshake, sending the status message.
+func (p *Peer) DoEthereumHandshake() error {
 	errc := make(chan error, 2)
 	ourStatus := getOurStatusData()
 

@@ -18,7 +18,7 @@ func (m *Manager) protocolHandler(p *p2p.Peer, rw p2p.MsgReadWriter) error {
 		rw: rw,
 	}
 
-	if err := ethPeer.sendStatusMsg(); err != nil {
+	if err := ethPeer.DoEthereumHandshake(); err != nil {
 		log.Debug("failed eth protocol handshake", p, "error", err)
 		return err
 	}

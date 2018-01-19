@@ -1,14 +1,8 @@
 #!/bin/bash
 
 CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-GITHUB_TARGET=$GOPATH/src/github.com/hermanjunge/devp2p-concept
 
 ## Shamelessly overwrite this geth library
 sed -i '' "s/maxActiveDialTasks = 16/maxActiveDialTasks = 100000/" $GOPATH/src/github.com/ethereum/go-ethereum/p2p/server.go
 
-mkdir -p $GOPATH/src/github.com/hermanjunge/
-rm -rf $GITHUB_TARGET
-cp -R $CURRENT_DIR $GITHUB_TARGET
-
-cd $GITHUB_TARGET
 go build -v -o ejemplo *.go && ./ejemplo "$@"

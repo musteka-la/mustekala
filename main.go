@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/hermanjunge/devp2p-concept/bridge"
-	"github.com/hermanjunge/devp2p-concept/devp2p"
+	"github.com/metamask/eth-ipld-hot-importer/bridge"
+	"github.com/metamask/eth-ipld-hot-importer/devp2p"
 )
 
 func main() {
