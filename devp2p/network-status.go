@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 )
@@ -19,6 +20,7 @@ type networkStatus struct {
 
 // peerNetworkStatus is the n-tuple of the networkStatus object
 type peerNetworkStatus struct {
+	hash       string // the hash id's first 8 characters
 	status     string // We'll use an enum later
 	statusPlus string // why it failed, observations, etc
 }
@@ -49,42 +51,42 @@ func newNetworkStatus() *networkStatus {
 	}
 }
 
-func (n *networkStatus) insert(p *Peer) {
+func (n *networkStatus) updateStatus(peerid string, status string, statusPlus string) {
 	n.lock.Lock()
 	defer n.lock.Unlock()
 
-	n.peers[p.id] = &peerNetworkStatus{
-		status: "encrypted-handshake",
+	// cleanup
+	if peerid[:4] == "Peer" {
+		peerid = peerid[5:]
 	}
 
-}
+	// check that the peer exists in our registries, create it if not
+	if _, ok := n.peers[peerid]; !ok {
+		n.peers[peerid] = &peerNetworkStatus{}
+	}
 
-func (n *networkStatus) updateStatus(p *Peer, status string, statusPlus string) {
-	n.lock.Lock()
-	defer n.lock.Unlock()
-
-	n.peers[p.id].status = status
+	n.peers[peerid].status = status
 
 	switch {
 	case status == "failed-eth-handshake":
 		switch {
 		case n.regex.statusMsg.MatchString(statusPlus):
-			n.peers[p.id].statusPlus = "status message\",\"" + statusPlus[16:]
+			n.peers[peerid].statusPlus = "status message\",\"" + statusPlus[16:]
 		case n.regex.msgTooLarge.MatchString(statusPlus):
-			n.peers[p.id].statusPlus = "message too large\",\"" + statusPlus[19:]
+			n.peers[peerid].statusPlus = "message too large\",\"" + statusPlus[19:]
 		case n.regex.decoding.MatchString(statusPlus):
-			n.peers[p.id].statusPlus = "rlp decoding\",\"" + statusPlus[16:]
+			n.peers[peerid].statusPlus = "rlp decoding\",\"" + statusPlus[16:]
 		case n.regex.networkMismatch.MatchString(statusPlus):
-			n.peers[p.id].statusPlus = "network mismatch\",\"" + statusPlus[18:]
+			n.peers[peerid].statusPlus = "network mismatch\",\"" + statusPlus[18:]
 		case n.regex.genesisMismatch.MatchString(statusPlus):
-			n.peers[p.id].statusPlus = "genesis block mismatch\",\"" + statusPlus[24:]
+			n.peers[peerid].statusPlus = "genesis block mismatch\",\"" + statusPlus[24:]
 		case n.regex.protocolMismatch.MatchString(statusPlus):
-			n.peers[p.id].statusPlus = "p2p protocol mismatch\",\"" + statusPlus[27:]
+			n.peers[peerid].statusPlus = "p2p protocol mismatch\",\"" + statusPlus[27:]
 		default:
-			n.peers[p.id].statusPlus = statusPlus
+			n.peers[peerid].statusPlus = statusPlus
 		}
 	default:
-		n.peers[p.id].statusPlus = statusPlus
+		n.peers[peerid].statusPlus = statusPlus
 	}
 }
 
@@ -100,17 +102,24 @@ func (n *networkStatus) dumpStatus() {
 	filepath := fmt.Sprintf("/tmp/network-status-%v.csv", t.Format("20060102150405"))
 	f, err := os.Create(filepath)
 	if err != nil {
-		fmt.Printf("Error creating the file! %v\n", err)
+		log.Errorf("Error creating the file! %v\n", err)
 		return
 	}
 	defer f.Close()
 
 	var line string
 	for k, v := range n.peers {
-		line = fmt.Sprintf("\"%v\",\"%v\",\"%v\"\n", k, v.status, v.statusPlus)
+		// split the id into hash and remote address
+		id := strings.Split(k, " ")
+		if len(id) != 2 {
+			log.Errorf("peerid should be like <hash> <remoteAddr>. It is %v\n", k)
+			return
+		}
+		// prepare the line and write it to the file
+		line = fmt.Sprintf("\"%v\",\"%v\",\"%v\",\"%v\"\n", id[0], id[1], v.status, v.statusPlus)
 		_, err := f.WriteString(line)
 		if err != nil {
-			fmt.Printf("Error writing the file! %v\n", err)
+			log.Errorf("Error writing the file! %v\n", err)
 			return
 		}
 	}
