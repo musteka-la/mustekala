@@ -1,5 +1,7 @@
 package devp2p
 
+import "fmt"
+
 // consumeToDevP2PChan is a wrapper to the for loop that processes the
 // messages sent to the ToDevP2P channel.
 func (m *Manager) consumeToDevP2PChan() {
@@ -14,5 +16,10 @@ func (m *Manager) consumeToDevP2PChan() {
 		// TODO
 		// IMPLEMENT
 		log.Debugf("incoming Message ToDevP2P: %v", msg)
+
+		switch {
+		case msg.Header == "network-status":
+			fmt.Printf("%v", m.networkStatus.dumpStatus())
+		}
 	}
 }

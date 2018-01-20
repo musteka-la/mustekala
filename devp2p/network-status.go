@@ -25,7 +25,6 @@ func newNetworkStatus() *networkStatus {
 	}
 }
 
-// insertOrUpdate is the main function of the networkStatus object
 func (n *networkStatus) insert(p *Peer) {
 	n.lock.Lock()
 	defer n.lock.Unlock()
@@ -53,4 +52,17 @@ func (n *networkStatus) updateStatus(p *Peer, status string, statusPlus string) 
 		fmt.Printf("%v\t%v\n", k, v)
 	}
 	// DEBUG
+}
+
+func (n *networkStatus) dumpStatus() []*peerNetworkStatus {
+	n.lock.Lock()
+	defer n.lock.Unlock()
+
+	response := make([]*peerNetworkStatus, 0)
+
+	for _, v := range n.peers {
+		response = append(response, v)
+	}
+
+	return response
 }

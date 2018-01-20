@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/metamask/eth-ipld-hot-importer/bridge"
 	"github.com/metamask/eth-ipld-hot-importer/devp2p"
 )
@@ -45,6 +47,18 @@ func main() {
 	// * runs the 4 level (65536) current block state trie importing algorithm (TODO)
 	// * runs the on-demand requesting algorithm for state + storage data algorithm (TODO)
 	// TODO
+
+	// DEBUG
+	for {
+		msg := bridge.Message{
+			Header: "network-status",
+		}
+
+		br.Channels.ToDevP2P <- msg
+
+		time.Sleep(2 * time.Second)
+	}
+	// DEBUG
 
 	// PLACEHOLDER
 	// We run the main importing loop here, to block the main function
