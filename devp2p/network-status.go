@@ -2,7 +2,9 @@ package devp2p
 
 import (
 	"fmt"
+	"os"
 	"sync"
+	"time"
 )
 
 // networkStatus is the object that will give you the peers we have seen
@@ -47,8 +49,25 @@ func (n *networkStatus) dumpStatus() {
 	n.lock.Lock()
 	defer n.lock.Unlock()
 
+	t := time.Now()
+	fmt.Sprintf("%v", t.Format("20060102150405"))
+
+	// TODO
+	// This file code should not be here, output this to the FromDevP2P channel
+	f, err := os.Create(fmt.Sprintf("/tmp/network-status-%v.csv", t.Format("20060102150405")))
+	if err != nil {
+		fmt.Printf("Error creating the file! %v\n", err)
+		return
+	}
+	defer f.Close()
+
+	var line string
 	for k, v := range n.peers {
-		// Super sofisticated CSV lib
-		fmt.Printf("\"%v\",\"%v\",\"%v\"\n", k, v.status, v.statusPlus)
+		line = fmt.Sprintf("\"%v\",\"%v\",\"%v\"\n", k, v.status, v.statusPlus)
+		_, err := f.WriteString(line)
+		if err != nil {
+			fmt.Printf("Error writing the file! %v\n", err)
+			return
+		}
 	}
 }
