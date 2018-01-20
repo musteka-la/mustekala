@@ -30,10 +30,15 @@ func (m *Manager) newServer(mgrConfig Config) *p2p.Server {
 		},
 	}
 
+	// using our custom logger to catch those messages
+	// without needing to fork the go-ethereum/p2p library
+	p2pliblogger := &p2pLibLogger{}
+
 	serverConfig := p2p.Config{
 		BootstrapNodes:  mgrConfig.bootnodes,
 		Dialer:          dialer,
 		ListenAddr:      ":30303",
+		Logger:          p2pliblogger,
 		MaxPeers:        1000000,
 		MaxPendingPeers: 1000000,
 		Name:            name,
