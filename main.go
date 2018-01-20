@@ -56,7 +56,7 @@ func main() {
 
 		br.Channels.ToDevP2P <- msg
 
-		time.Sleep(2 * time.Second)
+		time.Sleep(10 * time.Second)
 	}
 	// DEBUG
 

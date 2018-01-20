@@ -33,11 +33,6 @@ func (n *networkStatus) insert(p *Peer) {
 		status: "encrypted-handshake",
 	}
 
-	// DEBUG
-	for k, v := range n.peers {
-		fmt.Printf("%v\t%v\n", k, v)
-	}
-	// DEBUG
 }
 
 func (n *networkStatus) updateStatus(p *Peer, status string, statusPlus string) {
@@ -46,23 +41,14 @@ func (n *networkStatus) updateStatus(p *Peer, status string, statusPlus string) 
 
 	n.peers[p.id].status = status
 	n.peers[p.id].statusPlus = statusPlus
-
-	// DEBUG
-	for k, v := range n.peers {
-		fmt.Printf("%v\t%v\n", k, v)
-	}
-	// DEBUG
 }
 
-func (n *networkStatus) dumpStatus() []*peerNetworkStatus {
+func (n *networkStatus) dumpStatus() {
 	n.lock.Lock()
 	defer n.lock.Unlock()
 
-	response := make([]*peerNetworkStatus, 0)
-
-	for _, v := range n.peers {
-		response = append(response, v)
+	for k, v := range n.peers {
+		// Super sofisticated CSV lib
+		fmt.Printf("\"%v\",\"%v\",\"%v\"\n", k, v.status, v.statusPlus)
 	}
-
-	return response
 }
