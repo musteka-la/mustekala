@@ -26,7 +26,7 @@ func (m *Manager) protocolHandler(p *p2p.Peer, rw p2p.MsgReadWriter) error {
 		return err
 	}
 
-	m.networkStatus.updateStatus(ethPeer, "added-to-peerstore", "")
+	m.networkStatus.updateStatus(ethPeer, "added-to-peerstore", "OK")
 
 	// in the lifecycle of a peer, after the ethereum handshake is succesful,
 	// we add this peer into our store, which will make them indirectly available
