@@ -19,6 +19,8 @@ var log = logging.Logger("devp2p")
 // managing its connected peers, and communicating with the bridge
 // through the assigned channels.
 type Manager struct {
+	config *Config
+
 	server *p2p.Server
 
 	toDevP2PChan   chan bridge.Message
@@ -43,6 +45,9 @@ type Config struct {
 
 	// we can find the client's private key here
 	PrivateKeyFilePath string
+
+	// We can log what is going on with the go-ethereum/p2p library
+	LibP2PDebug bool
 }
 
 // NewDevP2P returns a DevP2P Manager object
@@ -64,10 +69,12 @@ type Config struct {
 // * sets up the server. See manager.protocolHandler() and handlerIncomingMsg()
 //   to understand a peer's lifecycle and the receiving of
 //   devp2p messages and sending to the bridge.
-func NewManager(br *bridge.Bridge, config Config) *Manager {
+func NewManager(br *bridge.Bridge, config *Config) *Manager {
 	var err error
 
 	manager := &Manager{}
+
+	manager.config = config
 
 	config.bootnodes, err = parseBootnodesFile(config.BootnodesPath)
 	if err != nil {
@@ -87,7 +94,7 @@ func NewManager(br *bridge.Bridge, config Config) *Manager {
 
 	manager.networkStatus = newNetworkStatus()
 
-	manager.p2pLibLogger = &p2pLibLogger{}
+	manager.p2pLibLogger = &p2pLibLogger{mgr: manager}
 
 	manager.server = manager.newServer(config)
 

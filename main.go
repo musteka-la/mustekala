@@ -24,9 +24,10 @@ func main() {
 	//   incoming and an outgoing channel, using the peer requesting some
 	//   piece of data, or "the best" one, based on determined criteria of the
 	//   peerstore.
-	devp2pConfig := devp2p.Config{
+	devp2pConfig := &devp2p.Config{
 		BootnodesPath:    cfg.DevP2PBootnodesPath,
 		NodeDatabasePath: cfg.DevP2PNodeDatabasePath,
+		LibP2PDebug:      cfg.DevP2PLibDebug,
 	}
 
 	devp2pServer := devp2p.NewManager(br, devp2pConfig)

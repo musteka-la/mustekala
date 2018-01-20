@@ -85,9 +85,10 @@ func (h *p2pLibHandler) Log(r *gethlog.Record) error {
 // we take it easy with a confy single catch all function with some switches
 // and grab what we need.
 func (m *Manager) p2pLibLoggerCatchAll(lvl, msg string, ctx ...interface{}) {
-	// TODO
-	// we may want to use a command flag option to output these logs or not to our lib logger
-	log.Debugf("p2p Lib Logger: LEVEL: %v MSG: %v CTX: %v", lvl, msg, ctx)
+	// You need to activate the flag `--devp2p-lib-debug` to enjoy these logs.
+	if m.config.LibP2PDebug {
+		log.Debugf("p2p Lib Logger: LEVEL: %v MSG: %v CTX: %v", lvl, msg, ctx)
+	}
 
 	switch {
 	case lvl == "trace":

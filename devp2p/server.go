@@ -11,7 +11,7 @@ import (
 
 // newServer prepares the devp2p server using the values set in configuration,
 // and passed as parameter.
-func (m *Manager) newServer(mgrConfig Config) *p2p.Server {
+func (m *Manager) newServer(mgrConfig *Config) *p2p.Server {
 	dialer := p2p.TCPDialer{&net.Dialer{Timeout: 60 * time.Second}}
 
 	name := getClientName()
