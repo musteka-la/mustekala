@@ -1,6 +1,9 @@
 package devp2p
 
-import "sync"
+import (
+	"fmt"
+	"sync"
+)
 
 // networkStatus is the object that will give you the peers we have seen
 // and some useful stats
@@ -11,6 +14,8 @@ type networkStatus struct {
 
 // peerNetworkStatus is the n-tuple of the networkStatus object
 type peerNetworkStatus struct {
+	status     string // We'll use an enum later
+	statusPlus string // why it failed, observations, etc
 }
 
 // newNetworkStatus is the networkStatus constructor
@@ -21,8 +26,31 @@ func newNetworkStatus() *networkStatus {
 }
 
 // insertOrUpdate is the main function of the networkStatus object
-func (n *networkStatus) insertOrUpdate(p peerNetworkStatus) {
+func (n *networkStatus) insert(p *Peer) {
 	n.lock.Lock()
 	defer n.lock.Unlock()
 
+	n.peers[p.id] = &peerNetworkStatus{
+		status: "encrypted-handshake",
+	}
+
+	// DEBUG
+	for k, v := range n.peers {
+		fmt.Printf("%v\t%v\n", k, v)
+	}
+	// DEBUG
+}
+
+func (n *networkStatus) updateStatus(p *Peer, status string, statusPlus string) {
+	n.lock.Lock()
+	defer n.lock.Unlock()
+
+	n.peers[p.id].status = status
+	n.peers[p.id].statusPlus = statusPlus
+
+	// DEBUG
+	for k, v := range n.peers {
+		fmt.Printf("%v\t%v\n", k, v)
+	}
+	// DEBUG
 }
