@@ -14,11 +14,23 @@ import (
 var _ gethlog.Logger = (*p2pLibLogger)(nil)
 
 // p2pLibLogger complies with go-ethereum/log interface
-type p2pLibLogger struct{}
+type p2pLibLogger struct {
+	mgr *Manager
+}
+
+// createCustomP2PLibLogger is the function that the manager uses.
+// we avoided New, as there is an interface one called that way.
+func createCustomP2PLibLogger(m *Manager) *p2pLibLogger {
+	return &p2pLibLogger{
+		mgr: m,
+	}
+}
 
 // New complies with go-ethereum/log interface
 func (l *p2pLibLogger) New(ctx ...interface{}) gethlog.Logger {
-	return &p2pLibLogger{}
+	return &p2pLibLogger{
+		mgr: l.mgr,
+	}
 }
 
 // GetHandler complies with go-ethereum/log interface
@@ -30,22 +42,34 @@ func (l *p2pLibLogger) GetHandler() gethlog.Handler {
 func (l *p2pLibLogger) SetHandler(h gethlog.Handler) {}
 
 // Trace complies with go-ethereum/log interface and will send the received input to our catchall function
-func (l *p2pLibLogger) Trace(msg string, ctx ...interface{}) { p2pLibLoggerCatchAll("trace", msg, ctx) }
+func (l *p2pLibLogger) Trace(msg string, ctx ...interface{}) {
+	l.mgr.p2pLibLoggerCatchAll("trace", msg, ctx...)
+}
 
 // Debug complies with go-ethereum/log interface and will send the received input to our catchall function
-func (l *p2pLibLogger) Debug(msg string, ctx ...interface{}) { p2pLibLoggerCatchAll("debug", msg, ctx) }
+func (l *p2pLibLogger) Debug(msg string, ctx ...interface{}) {
+	l.mgr.p2pLibLoggerCatchAll("debug", msg, ctx...)
+}
 
 // Info complies with go-ethereum/log interface and will send the received input to our catchall function
-func (l *p2pLibLogger) Info(msg string, ctx ...interface{}) { p2pLibLoggerCatchAll("info", msg, ctx) }
+func (l *p2pLibLogger) Info(msg string, ctx ...interface{}) {
+	l.mgr.p2pLibLoggerCatchAll("info", msg, ctx...)
+}
 
 // Warn complies with go-ethereum/log interface and will send the received input to our catchall function
-func (l *p2pLibLogger) Warn(msg string, ctx ...interface{}) { p2pLibLoggerCatchAll("warn", msg, ctx) }
+func (l *p2pLibLogger) Warn(msg string, ctx ...interface{}) {
+	l.mgr.p2pLibLoggerCatchAll("warn", msg, ctx...)
+}
 
 // Error complies with go-ethereum/log interface and will send the received input to our catchall function
-func (l *p2pLibLogger) Error(msg string, ctx ...interface{}) { p2pLibLoggerCatchAll("error", msg, ctx) }
+func (l *p2pLibLogger) Error(msg string, ctx ...interface{}) {
+	l.mgr.p2pLibLoggerCatchAll("error", msg, ctx...)
+}
 
 // Crit complies with go-ethereum/log interface and will send the received input to our catchall function
-func (l *p2pLibLogger) Crit(msg string, ctx ...interface{}) { p2pLibLoggerCatchAll("crit", msg, ctx) }
+func (l *p2pLibLogger) Crit(msg string, ctx ...interface{}) {
+	l.mgr.p2pLibLoggerCatchAll("crit", msg, ctx...)
+}
 
 // p2pLibHandler complies with go-ethereum/log interface
 type p2pLibHandler struct{}
@@ -60,7 +84,7 @@ func (h *p2pLibHandler) Log(r *gethlog.Record) error {
 ///////////////////////////////
 // we take it easy with a confy single catch all function with some switches
 // and grab what we need.
-func p2pLibLoggerCatchAll(lvl, msg string, ctx ...interface{}) {
+func (m *Manager) p2pLibLoggerCatchAll(lvl, msg string, ctx ...interface{}) {
 	// TODO
 	// we may want to use a command flag option to output these logs or not to our lib logger
 	log.Debugf("p2p Lib Logger: LEVEL: %v MSG: %v CTX: %v", lvl, msg, ctx)

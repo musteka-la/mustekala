@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	gethlog "github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/discover"
 	logging "github.com/ipfs/go-log"
@@ -25,6 +26,7 @@ type Manager struct {
 
 	peerstore *peerStore
 
+	p2pLibLogger  gethlog.Logger
 	networkStatus *networkStatus
 }
 
@@ -56,6 +58,9 @@ type Config struct {
 // * sets up the network status object, we can retrieve some stats here
 //   for further analysis.
 //
+// * sets up a custom p2p lib logger, to be able to get stats on dialing, encrypted
+//   and proto handshakes, as well as catching and printing those logs.
+//
 // * sets up the server. See manager.protocolHandler() and handlerIncomingMsg()
 //   to understand a peer's lifecycle and the receiving of
 //   devp2p messages and sending to the bridge.
@@ -81,6 +86,8 @@ func NewManager(br *bridge.Bridge, config Config) *Manager {
 	manager.peerstore = newPeerStore()
 
 	manager.networkStatus = newNetworkStatus()
+
+	manager.p2pLibLogger = &p2pLibLogger{}
 
 	manager.server = manager.newServer(config)
 
