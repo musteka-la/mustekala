@@ -1,6 +1,8 @@
 package devp2p
 
 import (
+	"fmt"
+
 	gethlog "github.com/ethereum/go-ethereum/log"
 )
 
@@ -82,6 +84,7 @@ func (h *p2pLibHandler) Log(r *gethlog.Record) error {
 ///////////////////////////////
 // Catch all for this custom logger
 ///////////////////////////////
+
 // we take it easy with a confy single catch all function with some switches
 // and grab what we need.
 func (m *Manager) p2pLibLoggerCatchAll(lvl, msg string, ctx ...interface{}) {
@@ -90,11 +93,16 @@ func (m *Manager) p2pLibLoggerCatchAll(lvl, msg string, ctx ...interface{}) {
 		log.Debugf("p2p Lib Logger: LEVEL: %v MSG: %v CTX: %v", lvl, msg, ctx)
 	}
 
+	// this switch is for when we want to input what's going on in the network status file.
 	switch {
 	case lvl == "trace":
 		switch {
 		case msg == "New dial task":
-
+			// forget about type casting
+			c := fmt.Sprintf("%v", ctx)
+			if c[0:13] == "[task dyndial" {
+				m.networkStatus.updateStatus(c[14:len(c)-1], "00-tcp dialing", "wait")
+			}
 		}
 	}
 }

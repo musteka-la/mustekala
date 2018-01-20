@@ -9,6 +9,21 @@ import (
 	"time"
 )
 
+/*
+	Network Status File
+
+	Status Codes:
+
+	00		Dialing
+		01	Dialing failed
+		29	Encrypted Handshake failed
+		39 	Protocol Handshake failed
+		49	Ethereum Handshake failed
+		59 	Byzantium Block Handshake failed
+	60 		Byzantium Block Handshake succeed
+
+*/
+
 // networkStatus is the object that will give you the peers we have seen
 // and some useful stats
 type networkStatus struct {
@@ -115,8 +130,9 @@ func (n *networkStatus) dumpStatus() {
 			log.Errorf("peerid should be like <hash> <remoteAddr>. It is %v\n", k)
 			return
 		}
+
 		// prepare the line and write it to the file
-		line = fmt.Sprintf("\"%v\",\"%v\",\"%v\",\"%v\"\n", id[0], id[1], v.status, v.statusPlus)
+		line = fmt.Sprintf("\"%v\",\"%v\",\"%v\",\"%v\",\"%v\"\n", id[0], id[1], v.status[0:2], v.status[3:], v.statusPlus)
 		_, err := f.WriteString(line)
 		if err != nil {
 			log.Errorf("Error writing the file! %v\n", err)
