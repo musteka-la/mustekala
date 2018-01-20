@@ -31,7 +31,7 @@ func (m *Manager) newServer(mgrConfig Config) *p2p.Server {
 	}
 
 	// using our custom logger to catch those messages
-	// without needing to fork the go-ethereum/p2p library
+	// without needing to fork the go-ethereum/p2p library.
 	p2pliblogger := &p2pLibLogger{}
 
 	serverConfig := p2p.Config{
