@@ -17,6 +17,12 @@ to get the data as hot as it comes.
 ./run --devp2p-bootnodes ./config/bootnodes-devp2p --bridge-debug
 ```
 
+**EVEN MOAR** Tracing. Add `--devp2p-lib-debug`. Will show you what the `go-ethereum/p2p` is doing.
+
+```
+./run --devp2p-bootnodes ./config/bootnodes-devp2p --bridge-debug --devp2p-lib-debug
+```
+
 ### Documentation
 
 At this stage, the hot importer is a very experimental package.
