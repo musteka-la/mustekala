@@ -90,7 +90,7 @@ func (p *Peer) readStatusMsg() error {
 	var theirStatus statusData
 	ourStatus := getOurStatusData()
 	if err := msg.Decode(&theirStatus); err != nil {
-		return fmt.Errorf("decoding error: %v %v", msg, err)
+		return fmt.Errorf("decoding error: %x %v", msg.Payload, err)
 	}
 
 	// ethereum handshake checks: genesis block, network and version
