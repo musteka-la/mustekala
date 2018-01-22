@@ -2,6 +2,7 @@ package devp2p
 
 import (
 	"fmt"
+	"strings"
 
 	gethlog "github.com/ethereum/go-ethereum/log"
 )
@@ -81,27 +82,35 @@ func (h *p2pLibHandler) Log(r *gethlog.Record) error {
 	return nil
 }
 
-///////////////////////////////
-// Catch all for this custom logger
-///////////////////////////////
-
-// we take it easy with a confy single catch all function with some switches
-// and grab what we need.
+// p2pLibLoggerCatchAll here we take it easy with a confy single-catch-all function
+// with some switches and grab what we need.
+// there must be a more elegant way to do this, other than just hacking the logs with an axe.
+// for now, this does the job, however.
 func (m *Manager) p2pLibLoggerCatchAll(lvl, msg string, ctx ...interface{}) {
+
 	// You need to activate the flag `--devp2p-lib-debug` to enjoy these logs.
 	if m.config.LibP2PDebug {
 		log.Debugf("p2p Lib Logger: LEVEL: %v MSG: %v CTX: %v", lvl, msg, ctx)
 	}
+
+	// forget about type casting below
+	c := fmt.Sprintf("%v", ctx)
+	cs := strings.Split(c, " ")
 
 	// this switch is for when we want to input what's going on in the network status file.
 	switch {
 	case lvl == "trace":
 		switch {
 		case msg == "New dial task":
-			// forget about type casting
-			c := fmt.Sprintf("%v", ctx)
 			if c[0:13] == "[task dyndial" {
 				m.networkStatus.updateStatus(c[14:len(c)-1], "00-tcp dialing", "wait")
+			}
+		case msg == "Dial error":
+			if c[0:13] == "[task dyndial" {
+				peerid := cs[2] + " " + cs[3]
+				details := strings.Join(cs[5:len(cs)], " ")
+				details = details[0 : len(details)-1]
+				m.networkStatus.updateStatus(peerid, "19-tcp dial fail", details)
 			}
 		}
 	}

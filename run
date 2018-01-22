@@ -1,8 +1,10 @@
 #!/bin/bash
 
-CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-## Shamelessly overwrite this geth library
+## Shamelessly overwrite these geth library lines, avoiding cumbersome fork repositories.
 sed -i '' "s/maxActiveDialTasks = 16/maxActiveDialTasks = 100000/" $GOPATH/src/github.com/ethereum/go-ethereum/p2p/server.go
+## If you are wondering for the $(printf '\t\t') ... Well it is the way OSX sed works with tabulators, see
+## 	https://unix.stackexchange.com/questions/145299/simple-sed-replacement-of-tabs-mysteriously-failing
+sed -i '' "s/$(printf '\t\t')log.Trace(\"Dial error\", \"task\", t, \"err\", err)/$(printf '\t\t')srv.log.Trace(\"Dial error\", \"task\", t, \"err\", err)/" $GOPATH/src/github.com/ethereum/go-ethereum/p2p/dial.go
 
+## Build the ejemplo executable and run it with the given command arguments
 go build -v -o ejemplo *.go && ./ejemplo "$@"
