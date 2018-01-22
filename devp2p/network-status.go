@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-	"time"
 )
 
 /*
@@ -30,6 +29,8 @@ type networkStatus struct {
 	peers map[string]*peerNetworkStatus
 
 	regex *regexMessages
+
+	filepath string
 }
 
 // peerNetworkStatus is the n-tuple of the networkStatus object
@@ -49,7 +50,7 @@ type regexMessages struct {
 }
 
 // newNetworkStatus is the networkStatus constructor
-func newNetworkStatus() *networkStatus {
+func newNetworkStatus(filepath string) *networkStatus {
 	rx := &regexMessages{
 		statusMsg:        regexp.MustCompile(`^status message:`),
 		msgTooLarge:      regexp.MustCompile(`^message too large:`),
@@ -60,8 +61,9 @@ func newNetworkStatus() *networkStatus {
 	}
 
 	return &networkStatus{
-		peers: make(map[string]*peerNetworkStatus),
-		regex: rx,
+		peers:    make(map[string]*peerNetworkStatus),
+		regex:    rx,
+		filepath: filepath,
 	}
 }
 
@@ -108,15 +110,14 @@ func (n *networkStatus) dumpStatus() {
 	n.lock.Lock()
 	defer n.lock.Unlock()
 
-	t := time.Now()
-	fmt.Sprintf("%v", t.Format("20060102150405"))
+	// no file defined? go home
+	if n.filepath == "" {
+		return
+	}
 
-	// TODO
-	// This file code should not be here, output this to the FromDevP2P channel
-	filepath := fmt.Sprintf("/tmp/network-status-%v.csv", t.Format("20060102150405"))
-	f, err := os.Create(filepath)
+	f, err := os.OpenFile(n.filepath, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Errorf("Error creating the file! %v\n", err)
+		log.Errorf("Error opening/creating the file! %v\n", err)
 		return
 	}
 	defer f.Close()
@@ -138,5 +139,5 @@ func (n *networkStatus) dumpStatus() {
 			return
 		}
 	}
-	log.Debug("Network status file created: ", filepath)
+	log.Info("Writing to the network status file ", n.filepath)
 }

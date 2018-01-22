@@ -23,6 +23,15 @@ to get the data as hot as it comes.
 ./run --devp2p-bootnodes ./config/bootnodes-devp2p --bridge-debug --devp2p-lib-debug
 ```
 
+### DevP2P Network Status File
+
+If you want to have a `.csv` file with all the nodes you have dialed, and their status,
+just use the flag `--devp2p-network-status` with some chosen filename.
+
+```
+./run --devp2p-bootnodes ./config/bootnodes-devp2p --devp2p-network-status /tmp/devp2p-stats
+```
+
 ### Documentation
 
 At this stage, the hot importer is a very experimental package.

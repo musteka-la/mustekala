@@ -14,12 +14,5 @@ func (m *Manager) consumeToDevP2PChan() {
 		// TODO
 		// IMPLEMENT
 		log.Debugf("incoming Message ToDevP2P: %v", msg)
-
-		switch {
-		case msg.Header == "network-status":
-			// TODO
-			// This is for now, to test the concept
-			m.networkStatus.dumpStatus()
-		}
 	}
 }

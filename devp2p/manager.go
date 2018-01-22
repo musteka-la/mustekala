@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"time"
 
 	gethlog "github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p"
@@ -46,7 +47,10 @@ type Config struct {
 	// we can find the client's private key here
 	PrivateKeyFilePath string
 
-	// We can log what is going on with the go-ethereum/p2p library
+	// if you want to log the status of the network
+	NetworkStatusPath string
+
+	// we can log what is going on with the go-ethereum/p2p library
 	LibP2PDebug bool
 }
 
@@ -92,7 +96,7 @@ func NewManager(br *bridge.Bridge, config *Config) *Manager {
 
 	manager.peerstore = newPeerStore()
 
-	manager.networkStatus = newNetworkStatus()
+	manager.networkStatus = newNetworkStatus(config.NetworkStatusPath)
 
 	manager.p2pLibLogger = &p2pLibLogger{mgr: manager}
 
@@ -115,6 +119,17 @@ func (m *Manager) Start() {
 	log.Info("launching fromDevP2P channel consumer")
 
 	go m.consumeToDevP2PChan()
+
+	if m.config.NodeDatabasePath != "" {
+		log.Info("launching network status csv writer")
+
+		go func() {
+			for {
+				m.networkStatus.dumpStatus()
+				time.Sleep(10 * time.Second)
+			}
+		}()
+	}
 }
 
 // Stop terminates the server

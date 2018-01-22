@@ -16,9 +16,10 @@ type Config struct {
 	BridgeDebug           bool
 
 	// DevP2P Options
-	DevP2PBootnodesPath    string
-	DevP2PNodeDatabasePath string
-	DevP2PLibDebug         bool
+	DevP2PBootnodesPath     string
+	DevP2PNodeDatabasePath  string
+	DevP2PNetworkStatusPath string
+	DevP2PLibDebug          bool
 }
 
 // ParseFlags gets those command line options
@@ -33,6 +34,7 @@ func ParseFlags() *Config {
 	// DevP2P Flags
 	flag.StringVar(&cfg.DevP2PBootnodesPath, "devp2p-bootnodes", "", "Location of devp2p bootnodes file")
 	flag.StringVar(&cfg.DevP2PNodeDatabasePath, "devp2p-nodes-database", "", "Location of the devp2p node database")
+	flag.StringVar(&cfg.DevP2PNetworkStatusPath, "devp2p-network-status", "", "Location of the devp2p network status file")
 	flag.BoolVar(&cfg.DevP2PLibDebug, "devp2p-lib-debug", false, "set this variable if you really like logs")
 	flag.Parse()
 
