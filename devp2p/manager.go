@@ -126,7 +126,8 @@ func (m *Manager) Start() {
 		go func() {
 			for {
 				m.networkStatus.dumpStatus()
-				time.Sleep(10 * time.Second)
+
+				time.Sleep(60 * time.Second)
 			}
 		}()
 	}
