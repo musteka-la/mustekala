@@ -112,6 +112,13 @@ func (m *Manager) p2pLibLoggerCatchAll(lvl, msg string, ctx ...interface{}) {
 				details = details[0 : len(details)-1]
 				m.networkStatus.updateStatus(peerid, "19-tcp dial fail", details)
 			}
+		case msg == "Setting up connection failed":
+			if cs[0][1:] != "0000000000000000" {
+				peerid := cs[0][1:] + " " + cs[1]
+				details := strings.Join(cs[2:len(cs)], " ")
+				details = details[0 : len(details)-1]
+				m.networkStatus.updateStatus(peerid, "29-connection setup fail", details)
+			}
 		}
 	}
 }

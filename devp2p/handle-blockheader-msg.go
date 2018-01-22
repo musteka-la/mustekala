@@ -21,7 +21,7 @@ func (m *Manager) handleBlockHeaderMsg(peer *Peer, msg *p2p.Msg) error {
 		if headers[0].Hash().String() == ByzantiumBlockHashStr {
 			log.Debug("Peer byzantium block is OK")
 
-			m.networkStatus.updateStatus(peer.id, "60-byzantium block check passed", "OK")
+			m.networkStatus.updateStatus(peer.id, "50-byzantium block check passed", "OK")
 
 			// no need to ship this to the outgoing channel, we synchronize from here
 			return nil
@@ -31,7 +31,7 @@ func (m *Manager) handleBlockHeaderMsg(peer *Peer, msg *p2p.Msg) error {
 			// this is the one corresponding to Ethereum Classic (ETC)
 			hashStr := fmt.Sprintf("%x", headers[0].Hash())
 
-			m.networkStatus.updateStatus(peer.id, "59-byzantium block check failed", hashStr)
+			m.networkStatus.updateStatus(peer.id, "49-byzantium block check failed", hashStr)
 
 			return fmt.Errorf("Peer byzantium block check failed, got %s", hashStr)
 		}

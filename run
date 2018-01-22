@@ -6,5 +6,7 @@ sed -i '' "s/maxActiveDialTasks = 16/maxActiveDialTasks = 100000/" $GOPATH/src/g
 ## 	https://unix.stackexchange.com/questions/145299/simple-sed-replacement-of-tabs-mysteriously-failing
 sed -i '' "s/$(printf '\t\t')log.Trace(\"Dial error\", \"task\", t, \"err\", err)/$(printf '\t\t')srv.log.Trace(\"Dial error\", \"task\", t, \"err\", err)/" $GOPATH/src/github.com/ethereum/go-ethereum/p2p/dial.go
 
+sed -i '' "s/srv.log.Trace(\"Setting up connection failed\", \"id\", c.id, \"err\", err)/srv.log.Trace(\"Setting up connection failed\", fmt.Sprintf(\"%x\", c.id[:8]), c.fd.RemoteAddr(), \"err\", err)/" $GOPATH/src/github.com/ethereum/go-ethereum/p2p/server.go
+
 ## Build the ejemplo executable and run it with the given command arguments
 go build -v -o ejemplo *.go && ./ejemplo "$@"

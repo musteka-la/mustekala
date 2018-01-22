@@ -14,13 +14,12 @@ import (
 
 	Status Codes:
 
-	00		Dialing
-		01	Dialing failed
-		29	Encrypted Handshake failed
-		39 	Protocol Handshake failed
-		49	Ethereum Handshake failed
-		59 	Byzantium Block Handshake failed
-	60 		Byzantium Block Handshake succeed
+	00		TCP Dialing
+		01	TCP Dialing failed
+		29	Connection Setup failed
+		39	Ethereum Handshake failed
+		49 	Byzantium Block Handshake failed
+	50 		Byzantium Block Handshake succeed
 
 */
 
