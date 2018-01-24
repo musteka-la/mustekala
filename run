@@ -10,7 +10,7 @@ sed -i '' "s/srv.log.Trace(\"Setting up connection failed\", \"id\", c.id, \"err
 
 ## This is the "bad kademlia" patch.
 ## Don't apply it unless you know what are you doing.
-sed -i '' "s/return len(a)\*8 - lz/return rand.Intn(257)/" $GOPATH/src/github.com/ethereum/go-ethereum/p2p/discover/node.go
+## sed -i '' "s/return len(a)\*8 - lz/return rand.Intn(257)/" $GOPATH/src/github.com/ethereum/go-ethereum/p2p/discover/node.go
 
 ## Build the ejemplo executable and run it with the given command arguments
 go build -v -o ejemplo *.go && ./ejemplo "$@"
