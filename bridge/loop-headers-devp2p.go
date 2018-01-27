@@ -2,10 +2,10 @@ package bridge
 
 import "time"
 
-// headerLoop is the bucle that synchronizes the block headers from
+// headerDevP2PLoop is the bucle that synchronizes the block headers from
 // a minimum block (i.e genesis, dao, byzantium) until the present.
-func (b *Bridge) headerLoop() {
-	log.Info("Launching the Header Loop")
+func (b *Bridge) headerDevP2PLoop() {
+	log.Info("Launching the DevP2P Block Header Syncing Loop")
 
 	// easy to read shorthand
 	//toDevP2PChan := b.Channels.ToDevP2P

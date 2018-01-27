@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/discover"
 	logging "github.com/ipfs/go-log"
 
-	"github.com/metamask/eth-ipld-hot-importer/bridge"
+	"github.com/metamask/eth-ipld-hot-importer/bridge/message"
 )
 
 var log = logging.Logger("devp2p")
@@ -24,8 +24,8 @@ type Manager struct {
 
 	server *p2p.Server
 
-	toDevP2PChan   chan bridge.Message
-	fromDevP2PChan chan bridge.Message
+	toDevP2PChan   chan message.Message
+	fromDevP2PChan chan message.Message
 
 	peerstore *peerStore
 
@@ -52,6 +52,10 @@ type Config struct {
 
 	// we can log what is going on with the go-ethereum/p2p library
 	LibP2PDebug bool
+
+	// Incoming and Outgoing Channels
+	IncomingChan chan message.Message
+	OutgoingChan chan message.Message
 }
 
 // NewDevP2P returns a DevP2P Manager object
@@ -73,7 +77,7 @@ type Config struct {
 // * sets up the server. See manager.protocolHandler() and handlerIncomingMsg()
 //   to understand a peer's lifecycle and the receiving of
 //   devp2p messages and sending to the bridge.
-func NewManager(br *bridge.Bridge, config *Config) *Manager {
+func NewManager(config *Config) *Manager {
 	var err error
 
 	manager := &Manager{}
@@ -91,8 +95,8 @@ func NewManager(br *bridge.Bridge, config *Config) *Manager {
 		os.Exit(1)
 	}
 
-	manager.toDevP2PChan = br.Channels.ToDevP2P
-	manager.fromDevP2PChan = br.Channels.FromDevP2P
+	manager.toDevP2PChan = config.IncomingChan
+	manager.fromDevP2PChan = config.OutgoingChan
 
 	manager.peerstore = newPeerStore()
 
