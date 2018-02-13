@@ -27,7 +27,7 @@ const (
 	GetReceiptsMsg = 0x0f
 	ReceiptsMsg    = 0x10
 
-	// ethereum relevant information
+	// ethereum byzantium fork relevant information
 	ByzantiumBlockNumber  = 4370000
 	ByzantiumBlockHashStr = "0xb1fcff633029ee18ab6482b58ff8b6e95dd7c82a954c852157152a7a6d32785e"
 )

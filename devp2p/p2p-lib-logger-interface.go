@@ -21,14 +21,6 @@ type p2pLibLogger struct {
 	mgr *Manager
 }
 
-// createCustomP2PLibLogger is the function that the manager uses.
-// we avoided New, as there is an interface one called that way.
-func createCustomP2PLibLogger(m *Manager) *p2pLibLogger {
-	return &p2pLibLogger{
-		mgr: m,
-	}
-}
-
 // New complies with go-ethereum/log interface
 func (l *p2pLibLogger) New(ctx ...interface{}) gethlog.Logger {
 	return &p2pLibLogger{
@@ -46,47 +38,49 @@ func (l *p2pLibLogger) SetHandler(h gethlog.Handler) {}
 
 // Trace complies with go-ethereum/log interface and will send the received input to our catchall function
 func (l *p2pLibLogger) Trace(msg string, ctx ...interface{}) {
-	l.mgr.p2pLibLoggerCatchAll("trace", msg, ctx...)
+	l.mgr.p2pLibLoggerCatcher("trace", msg, ctx...)
 }
 
 // Debug complies with go-ethereum/log interface and will send the received input to our catchall function
 func (l *p2pLibLogger) Debug(msg string, ctx ...interface{}) {
-	l.mgr.p2pLibLoggerCatchAll("debug", msg, ctx...)
+	l.mgr.p2pLibLoggerCatcher("debug", msg, ctx...)
 }
 
 // Info complies with go-ethereum/log interface and will send the received input to our catchall function
 func (l *p2pLibLogger) Info(msg string, ctx ...interface{}) {
-	l.mgr.p2pLibLoggerCatchAll("info", msg, ctx...)
+	l.mgr.p2pLibLoggerCatcher("info", msg, ctx...)
 }
 
 // Warn complies with go-ethereum/log interface and will send the received input to our catchall function
 func (l *p2pLibLogger) Warn(msg string, ctx ...interface{}) {
-	l.mgr.p2pLibLoggerCatchAll("warn", msg, ctx...)
+	l.mgr.p2pLibLoggerCatcher("warn", msg, ctx...)
 }
 
 // Error complies with go-ethereum/log interface and will send the received input to our catchall function
 func (l *p2pLibLogger) Error(msg string, ctx ...interface{}) {
-	l.mgr.p2pLibLoggerCatchAll("error", msg, ctx...)
+	l.mgr.p2pLibLoggerCatcher("error", msg, ctx...)
 }
 
 // Crit complies with go-ethereum/log interface and will send the received input to our catchall function
 func (l *p2pLibLogger) Crit(msg string, ctx ...interface{}) {
-	l.mgr.p2pLibLoggerCatchAll("crit", msg, ctx...)
+	l.mgr.p2pLibLoggerCatcher("crit", msg, ctx...)
 }
 
 // p2pLibHandler complies with go-ethereum/log interface
 type p2pLibHandler struct{}
 
-// Logw complies ith go-ethereum/log interface
+// Log complies ith go-ethereum/log interface
 func (h *p2pLibHandler) Log(r *gethlog.Record) error {
 	return nil
 }
 
-// p2pLibLoggerCatchAll here we take it easy with a confy single-catch-all function
-// with some switches and grab what we need.
+// p2pLibLoggerCatcher here we take it easy with a confy single-catch-all function
+// with some switches to be able to grab what we need, and pass it to the peer scrapper,
+// which may or not process the received info.
+//
 // there must be a more elegant way to do this, other than just hacking the logs with an axe.
 // for now, this does the job, however.
-func (m *Manager) p2pLibLoggerCatchAll(lvl, msg string, ctx ...interface{}) {
+func (m *Manager) p2pLibLoggerCatcher(lvl, msg string, ctx ...interface{}) {
 
 	// You need to activate the flag `--devp2p-lib-debug` to enjoy these logs.
 	if m.config.LibP2PDebug {
@@ -97,27 +91,31 @@ func (m *Manager) p2pLibLoggerCatchAll(lvl, msg string, ctx ...interface{}) {
 	c := fmt.Sprintf("%v", ctx)
 	cs := strings.Split(c, " ")
 
-	// this switch is for when we want to input what's going on in the network status file.
+	// this switch is for when we want to format the input
+	// on what's going on in the network status file.
 	switch {
 	case lvl == "trace":
 		switch {
 		case msg == "New dial task":
 			if c[0:13] == "[task dyndial" {
-				m.networkStatus.updateStatus(c[14:len(c)-1], "00-tcp dialing", "wait")
+				m.peerScrapper(c[14:len(c)-1], "00-tcp dialing", "wait")
+				return
 			}
 		case msg == "Dial error":
 			if c[0:13] == "[task dyndial" {
 				peerid := cs[2] + " " + cs[3]
 				details := strings.Join(cs[5:len(cs)], " ")
 				details = details[0 : len(details)-1]
-				m.networkStatus.updateStatus(peerid, "19-tcp dial fail", details)
+				m.peerScrapper(peerid, "19-tcp dial fail", details)
+				return
 			}
 		case msg == "Setting up connection failed":
 			if cs[0][1:] != "0000000000000000" {
 				peerid := cs[0][1:] + " " + cs[1]
 				details := strings.Join(cs[2:len(cs)], " ")
 				details = details[0 : len(details)-1]
-				m.networkStatus.updateStatus(peerid, "29-connection setup fail", details)
+				m.peerScrapper(peerid, "29-connection setup fail", details)
+				return
 			}
 		}
 	}

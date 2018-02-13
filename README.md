@@ -1,41 +1,22 @@
-## The DevP2P / LibP2P Hot Importer
+## MUSTEKALA
 
-### Why "_hot importer_"?
+A blockchain service framework.
 
-Because we are just plugging into the devp2p network, as another peer, trying
-to get the data as hot as it comes.
+_Modularized functionalities for the busy crypto developer_.
 
-### Very Quick Start
+### Development Requirements
 
-```
-./run --devp2p-bootnodes ./config/bootnodes-devp2p
-```
+* Go 1.9.2
+  * (See [This issue](https://github.com/ethereum/go-ethereum/issues/15752#issuecomment-354271572))
+* [Redis](https://redis.io/)
+  * Version 4.0.8
+* Have Geth in your `$GOPATH`. (`go get github.com/ethereum/go-ethereum`)
+  * Check that you have at least version `v.1.8.1` (revision .`1e6741`)
 
-**Moar** Tracing with `bridge-debug`
+### Services
 
-```
-./run --devp2p-bootnodes ./config/bootnodes-devp2p --bridge-debug
-```
+#### DevP2P Node Scrapper
 
-**EVEN MOAR** Tracing. Add `--devp2p-lib-debug`. Will show you what the `go-ethereum/p2p` is doing.
+Connects as a peer of the devp2p network, storing information of the visited peers into the DB.
 
-```
-./run --devp2p-bootnodes ./config/bootnodes-devp2p --bridge-debug --devp2p-lib-debug
-```
-
-### DevP2P Network Status File
-
-If you want to have a `.csv` file with all the nodes you have dialed, and their status,
-just use the flag `--devp2p-network-status` with some chosen filename.
-
-```
-./run --devp2p-bootnodes ./config/bootnodes-devp2p --devp2p-network-status /tmp/devp2p-stats
-```
-
-### Documentation
-
-At this stage, the hot importer is a very experimental package.
-
-Documentation is in code, starting from `main.go`. If you want to contribute
-to this application, don't be shy to be verbose: Reading another person's code
-is where our billed hours go the most.
+[Go to the service README](services/devp2p-node-scrapper/README.md)

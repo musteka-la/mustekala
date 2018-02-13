@@ -11,12 +11,12 @@ import (
 
 // newServer prepares the devp2p server using the values set in configuration,
 // and passed as parameter.
-func (m *Manager) newServer(mgrConfig *Config) *p2p.Server {
+func (m *Manager) newServer() *p2p.Server {
 	dialer := p2p.TCPDialer{&net.Dialer{Timeout: 60 * time.Second}}
 
 	name := getClientName()
 
-	privateKey := getPrivateKey(mgrConfig.PrivateKeyFilePath)
+	privateKey := getPrivateKey(m.config.PrivateKeyFilePath)
 
 	// the defined custom protocol, contains in its handler all the avenues
 	// to let the caller of this package establish
@@ -31,15 +31,15 @@ func (m *Manager) newServer(mgrConfig *Config) *p2p.Server {
 	}
 
 	serverConfig := p2p.Config{
-		BootstrapNodes:  mgrConfig.bootnodes,
+		BootstrapNodes:  m.bootnodes,
 		Dialer:          dialer,
 		ListenAddr:      ":30303",
-		Logger:          m.p2pLibLogger,
+		Logger:          m.p2pLibLogger, // notice it is our custom wrapper
 		MaxPeers:        1000000,
 		MaxPendingPeers: 1000000,
 		Name:            name,
 		NoDiscovery:     false,
-		NodeDatabase:    mgrConfig.NodeDatabasePath,
+		NodeDatabase:    m.config.NodeDatabasePath,
 		PrivateKey:      privateKey,
 		Protocols:       protocols,
 	}

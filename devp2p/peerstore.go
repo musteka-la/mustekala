@@ -10,9 +10,9 @@ import (
 	"github.com/ethereum/go-ethereum/p2p"
 )
 
-// peerStore keeps track of the ethereum peers after a succesful
-// handshake (i.e. a match in protocols and version).
-// It is also able to tell the best nodes based on their difficulties (td).
+// peerStore keeps track of the devp2p peers after a succesful
+// handshake (i.e. a match in protocols, version and fork).
+// It is also able to give us the available nodes to make requests to.
 type peerStore struct {
 	lock sync.RWMutex
 

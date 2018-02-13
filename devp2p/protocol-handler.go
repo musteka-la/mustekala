@@ -20,11 +20,12 @@ func (m *Manager) protocolHandler(p *p2p.Peer, rw p2p.MsgReadWriter) error {
 
 	if err := ethPeer.DoEthereumHandshake(); err != nil {
 		log.Debug("failed eth protocol handshake", p, "error", err)
-		m.networkStatus.updateStatus(ethPeer.id, "39-ethereum handshake failed", err.Error())
+		m.peerScrapper(ethPeer.id, "39-ethereum handshake failed", err.Error()) // hook
 		return err
 	}
 
-	m.networkStatus.updateStatus(ethPeer.id, "40-waiting byzantium check", "wait")
+	// To the hook, to be updated if active
+	m.peerScrapper(ethPeer.id, "40-waiting byzantium check", "wait")
 
 	// in the lifecycle of a peer, after the ethereum handshake is succesful,
 	// we add this peer into our store, which will make them indirectly available

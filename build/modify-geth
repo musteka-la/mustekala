@@ -1,0 +1,29 @@
+#!/bin/bash
+
+## sed is different in linux and osx
+unamestr=$(uname)
+if [[ "$unamestr" == "Linux" ]]; then
+   SEDCMD="sed -i"
+elif [[ "$unamestr" == "Darwin" ]]; then
+   SEDCMD="sed -i ''"
+else
+	echo "Unsupported OS"
+	exit
+fi
+
+## Check out to version 1.8.1
+cd $GOPATH/src/github.com/ethereum/go-ethereum
+git checkout --quiet v1.8.1
+
+## Shamelessly overwrite these geth library lines, avoiding cumbersome fork repositories.
+$SEDCMD "s/maxActiveDialTasks     = 16/maxActiveDialTasks = 60000/" $GOPATH/src/github.com/ethereum/go-ethereum/p2p/server.go
+
+## If you are wondering for the $(printf '\t\t') ... Well it is the way OSX sed works with tabulators, see
+## 	https://unix.stackexchange.com/questions/145299/simple-sed-replacement-of-tabs-mysteriously-failing
+$SEDCMD "s/$(printf '\t\t')log.Trace(\"Dial error\", \"task\", t, \"err\", err)/$(printf '\t\t')srv.log.Trace(\"Dial error\", \"task\", t, \"err\", err)/" $GOPATH/src/github.com/ethereum/go-ethereum/p2p/dial.go
+
+$SEDCMD "s/srv.log.Trace(\"Setting up connection failed\", \"id\", c.id, \"err\", err)/srv.log.Trace(\"Setting up connection failed\", fmt.Sprintf(\"%x\", c.id[:8]), c.fd.RemoteAddr(), \"err\", err)/" $GOPATH/src/github.com/ethereum/go-ethereum/p2p/server.go
+
+## This is the "bad kademlia" patch.
+## Don't apply it unless you know what you are doing.
+## $SEDCMD "s/return len(a)\*8 - lz/return rand.Intn(257)/" $GOPATH/src/github.com/ethereum/go-ethereum/p2p/discover/node.go
