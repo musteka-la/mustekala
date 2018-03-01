@@ -41,9 +41,29 @@ from the root directory.
 
 ### Database
 
-(TODO)
-(TODO: Table of stored statuses)
-(TODO: Maybe an schema of redis and how to query them?)
+The schema in the redis database is very simple
+
+* `devp2p-scrapped-peers:all`: A set containing all the scrapped peers.
+* `devp2p-byzantium-peers:all`: A set containing all peers who passed the byzantium fork test.
+* `devp2p-non-byzantium-peers:all`: A set containing all peers who failed the byzantium fork test.
+* `devp2p-peerstatus:<peerid>`: A set containing all the recorded statuses for peer `<peerid>`.
+
+### Scripts
+
+You can extract information from the redis database to _csv_ files,
+using the following convenience scripts located at `/services/scripts`
+
+#### get-scrapped-devp2p-nodes-csv.sh
+
+Will give you all scrapped nodes and their last recorded status.
+
+#### get-byzantium-devp2p-nodes-csv.sh
+
+Will give you a list of the discovered byzantium fork peers.
+
+#### get-non-byzantium-devp2p-nodes-csv.sh
+
+Will give you a list of peers discovered that fail the byzantium fork test.
 
 ### Documentation
 
