@@ -8,6 +8,7 @@ import (
 	gethlog "github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/discover"
+	"github.com/garyburd/redigo/redis"
 	logging "github.com/ipfs/go-log"
 )
 
@@ -32,6 +33,9 @@ type Manager struct {
 	// this is our wrapper so we can get logging information
 	// from github.com/ethereum/go-ethereum/p2p
 	p2pLibLogger gethlog.Logger
+
+	// mustekala services database connection pool
+	dbPool *redis.Pool
 }
 
 // Config is the configuration object for DevP2P
@@ -48,6 +52,9 @@ type Config struct {
 	// activate this value to send updates on discovered and connected
 	// peers to the database
 	IsPeerScrapperActive bool
+
+	// Passing labels from one object to another
+	DbPool *redis.Pool
 
 	// the client's private key here
 	PrivateKeyFilePath string
@@ -89,8 +96,7 @@ func NewManager(config *Config) *Manager {
 		os.Exit(1)
 	}
 
-	// TODO
-	// Set up mustekala services database connection
+	manager.dbPool = config.DbPool
 
 	manager.peerstore = newPeerStore()
 

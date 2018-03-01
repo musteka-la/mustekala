@@ -15,6 +15,7 @@ type Config struct {
 	BootnodesPath    string
 	NodeDatabasePath string
 	DevP2PLibDebug   bool
+	DatabaseConn     string
 }
 
 // ParseFlags gets those command line options
@@ -26,6 +27,7 @@ func ParseFlags() *Config {
 	flag.StringVar(&cfg.BootnodesPath, "devp2p-bootnodes", "", "Location of devp2p bootnodes file")
 	flag.StringVar(&cfg.NodeDatabasePath, "devp2p-nodes-database", "", "Location of the devp2p node database")
 	flag.BoolVar(&cfg.DevP2PLibDebug, "devp2p-lib-debug", false, "set this variable if you really like logs (p2p lib logs)")
+	flag.StringVar(&cfg.DatabaseConn, "database-conn", ":6379", "redis DB connection string")
 	flag.Parse()
 
 	if cfg.Debug {

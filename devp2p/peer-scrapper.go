@@ -3,6 +3,7 @@ package devp2p
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -34,16 +35,17 @@ func init() {
 // however it can be used as well in any other service by activating
 // the flag IsPeerScrapperActive
 func (m *Manager) peerScrapper(peerid, status, statusPlus string) {
+	var err error
+
 	if !m.config.IsPeerScrapperActive {
 		return
 	}
-
-	var toDBKey, toDBVal string
 
 	// cleanup
 	if peerid[:4] == "Peer" {
 		peerid = peerid[5:]
 	}
+	peerid = strings.Replace(peerid, " ", ":", -1) // more redis key friendy
 
 	// make additional processing to the status if needed
 	// just csv friendly commas
@@ -67,17 +69,38 @@ func (m *Manager) peerScrapper(peerid, status, statusPlus string) {
 		}
 	}
 
-	// fill the key and value to the DB accordingly
-	toDBKey = "peer " + peerid
-	toDBVal = fmt.Sprintf("%d, %s, %s", time.Now().UnixNano(), status, statusPlus)
+	// storing into the database
+	// we go without using abstractions because we want to use a single conn
+	conn := m.dbPool.Get()
+	defer conn.Close()
 
-	// DEBUG
-	fmt.Printf("peerScrapper:\nkey:\t%v\nval:\t%v\n", toDBKey, toDBVal)
-	// DEBUG
+	// 0. send the peer to the set devp2p-peers (will create if it does not exist)
+	_, err = conn.Do("SADD", "devp2p-scrapped-peers:all", peerid)
+	if err != nil {
+		fmt.Printf("Error setting value in redisDB: %v\n", err)
+	}
 
-	// TODO
-	// 0. Send the peer to the set devp2p-peers (will create if it does not exist)
-	// 1. Send the status to the set devp2p-peerstatus:<peerid>
-	// 2. If it is a byzantium peer, send it to the set devp2p-byzantium-peers
-	// 3. If we have a negative for byzantium (wrong genesis, network or fork), send it to the set: devp2p-not-byzantium
+	// 1. send the concatenated status to the set devp2p-peerstatuses:<peerid>
+	concatStatus := fmt.Sprintf("%d, %s, %s", time.Now().UnixNano(), status, statusPlus)
+	_, err = conn.Do("SADD", "devp2p-peerstatus:"+peerid, concatStatus)
+	if err != nil {
+		fmt.Printf("Error setting value in redisDB: %v\n", err)
+	}
+
+	// 2. if it is a byzantium peer, send it to the set devp2p-byzantium-peers
+	if status == "50-byzantium block check passed" {
+		_, err = conn.Do("SADD", "devp2p-byzantium-peers:all", peerid)
+		if err != nil {
+			fmt.Printf("Error setting value in redisDB: %v\n", err)
+		}
+
+	}
+
+	// 3. if we have a negative for byzantium (wrong genesis, network or fork), send it to the set: devp2p-not-byzantium
+	if status == "49-byzantium block check failed" {
+		_, err = conn.Do("SADD", "devp2p-non-byzantium-peers:all", peerid)
+		if err != nil {
+			fmt.Printf("Error setting value in redisDB: %v\n", err)
+		}
+	}
 }
