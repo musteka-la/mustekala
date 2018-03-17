@@ -1,0 +1,5 @@
+#!/bin/bash
+
+while read line; do
+  curl --max-time 3 -s http://localhost:5002/api/v0/swarm/connect?arg=$line
+done <$1
