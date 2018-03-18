@@ -65,4 +65,4 @@ parity:
   volumes:
     - /home/core/parity-data:/parity-data
     - /home/core/peers:/parity-peers
-  command: "--warp --datadir /parity-data --ipfs-api --ipfs-api-port 5001 --ipfs-api-hosts all --ipfs-api-interface 0.0.0.0 --cache 8192 --pruning archive"
+  command: "--warp --datadir /parity-data --cache 8192 --pruning fast --ipfs-api --ipfs-api-port 5001 --ipfs-api-hosts all --ipfs-api-interface 0.0.0.0"
