@@ -9,4 +9,3 @@
 
 * `handleBlockHeaderMsg()`
   * Validate the sealing (pow) of each received header.
-  * Ship received headers to our DB.

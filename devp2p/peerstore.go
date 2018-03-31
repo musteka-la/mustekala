@@ -1,13 +1,15 @@
 package devp2p
 
 import (
+	"fmt"
 	"math/big"
+	"net"
 	"sort"
 	"sync"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/p2p"
+	"github.com/ethereum/go-ethereum/p2p/discover"
 )
 
 // peerStore keeps track of the devp2p peers after a succesful
@@ -27,25 +29,21 @@ type peerStore struct {
 // After a succesful ethereum handshake, this Peer can be added
 // in the peerstore, to be managed for further requesting.
 type Peer struct {
-	// the id of the devp2p node, shorted to 8 chars.
-	id string
+	// the id of the devp2p node, remote address and name
+	id         discover.NodeID
+	remoteAddr net.Addr
+	name       string
 
 	// the communication pipeline
 	rw p2p.MsgReadWriter
 
-	// total difficulty informed by the peer in the eth handshake
-	td *big.Int
-
-	// current block informed by the peer in the eth handshake
+	// head and total difficulty informed by the peer in the eth handshake
 	currentBlock common.Hash
+	td           *big.Int
+	lock         sync.RWMutex
 
-	////////////////
-	// Sent and Received Requests Data
-	////////////////
-	requestCntLock      sync.RWMutex
-	nextPeerTimesPicked int // Times it has been returned by the function nextPeer()
-	sentRequestsCnt     int
-	receivedRequestsCnt int
+	// is this peer useful for us?
+	byzantiumChecked bool
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -72,7 +70,39 @@ func (b byTD) Less(i, j int) bool {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// PEERSTORE CONSTRUCTOR
+// PEER
+////////////////////////////////////////////////////////////////////////////////
+
+// String implements fmt.Stringer.
+func (p *Peer) String() string {
+	return fmt.Sprintf("Peer %x %v", p.id[:8], p.remoteAddr)
+}
+
+// Head returns reported current block and total difficulty of the peer
+func (p *Peer) Head() (currentBlock common.Hash, td *big.Int) {
+	p.lock.RLock()
+	defer p.lock.RUnlock()
+
+	copy(currentBlock[:], p.currentBlock[:])
+	return currentBlock, new(big.Int).Set(p.td)
+}
+
+// RequestHeadersByHash fetches a batch of blocks' headers corresponding to the
+// specified header query, based on the hash of an origin block.
+func (p *Peer) RequestHeadersByHash(origin common.Hash, amount int, skip int, reverse bool) error {
+	log.Debugf("Fetching batch of headers count %v from_hash 0x%x skip %v reverse %v", amount, origin[:8], skip, reverse)
+	return p2p.Send(p.rw, GetBlockHeadersMsg, &getBlockHeadersData{Origin: hashOrNumber{Hash: origin}, Amount: uint64(amount), Skip: uint64(skip), Reverse: reverse})
+}
+
+// RequestHeadersByNumber fetches a batch of blocks' headers corresponding to the
+// specified header query, based on the number of an origin block.
+func (p *Peer) RequestHeadersByNumber(origin uint64, amount int, skip int, reverse bool) error {
+	log.Debugf("Fetching batch of headers count %v from_number %v skip %v reverse %v", amount, origin, skip, reverse)
+	return p2p.Send(p.rw, GetBlockHeadersMsg, &getBlockHeadersData{Origin: hashOrNumber{Number: origin}, Amount: uint64(amount), Skip: uint64(skip), Reverse: reverse})
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PEERSTORE
 ////////////////////////////////////////////////////////////////////////////////
 
 // newPeerStore prepares the peerstore of this library
@@ -89,59 +119,56 @@ func (p *peerStore) add(peer *Peer) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
-	p.peers[peer.id] = peer
+	p.peers[peer.String()] = peer
 
 	p.sortedIndexByTD = append(p.sortedIndexByTD, peer)
 	sort.Sort(byTD(p.sortedIndexByTD))
 
-	log.Debug("added peer to store", peer.id)
+	log.Debugf("added peer to store %v %v %x", peer.String(), peer.name, peer.currentBlock[:8])
 }
 
-// rRmove excludes a peer from the peerstore, recalculating
+// remove excludes a peer from the peerstore, recalculating
 // the sorting index by total difficulty
-func (p *peerStore) remove(peer *Peer) {
+func (p *peerStore) remove(id string) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
-	delete(p.peers, peer.id)
+	delete(p.peers, id)
 
 	newSortedIndexByTD := make([]*Peer, 0)
 	for _, sortedPeer := range p.sortedIndexByTD {
-		if sortedPeer.id != peer.id {
+		if sortedPeer.String() != id {
 			newSortedIndexByTD = append(newSortedIndexByTD, sortedPeer)
 		}
 	}
 	p.sortedIndexByTD = newSortedIndexByTD
 
-	log.Debug("removed peer from store", peer.id)
+	log.Debug("removed peer from store", id)
 }
 
-// capacity returns the number of peers available to make requests,
-// and the timestamp the request was made.
-func (p *peerStore) capacity() (int, int64) {
-	p.lock.Lock()
-	defer p.lock.Unlock()
-
-	return len(p.peers), time.Now().UnixNano()
-}
-
-// nextPeer returns the next best peer to send a request.
+// bestPeer returns the next best peer to send a request.
 // Peers are sorted by total difficulty and picked by
 // number of times a peer has been returned by this very function.
-func (p *peerStore) nextPeer() *Peer {
+func (p *peerStore) bestPeer() *Peer {
 	p.lock.Lock()
 	defer p.lock.Unlock()
+
+	// no peers? No Problem
+	if len(p.peers) == 0 {
+		return nil
+	}
 
 	// easier to read shorthand
 	s := p.sortedIndexByTD
 
+	// TODO
+	// Keep rotating the best peer
+
 	for i := 0; i < len(s)-1; i++ {
-		if s[i].nextPeerTimesPicked < s[i+1].nextPeerTimesPicked {
-			s[i].nextPeerTimesPicked++
+		if s[i].byzantiumChecked {
 			return s[i]
 		}
 	}
 
-	s[len(s)-1].nextPeerTimesPicked++
-	return s[len(s)-1]
+	return nil
 }

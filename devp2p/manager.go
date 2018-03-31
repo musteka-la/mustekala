@@ -36,6 +36,12 @@ type Manager struct {
 
 	// mustekala services database connection pool
 	dbPool *redis.Pool
+
+	// this one give us block headers
+	deliverHeaderCh chan deliverHeaderMsg
+
+	// the blck header syncer
+	syncer *Syncer
 }
 
 // Config is the configuration object for DevP2P
@@ -49,12 +55,15 @@ type Config struct {
 	// we can log what is going on with the go-ethereum/p2p library
 	LibP2PDebug bool
 
+	// Passing labels from one object to another
+	DbPool *redis.Pool
+
 	// activate this value to send updates on discovered and connected
 	// peers to the database
 	IsPeerScrapperActive bool
 
-	// Passing labels from one object to another
-	DbPool *redis.Pool
+	// activate this value to start the block header syncing
+	IsSyncBlockHeaderActive bool
 
 	// the client's private key here
 	PrivateKeyFilePath string
@@ -78,6 +87,8 @@ type Config struct {
 // * sets up the server. See manager.protocolHandler() and handlerIncomingMsg()
 //   to understand a peer's lifecycle and the receiving of
 //   devp2p messages and sending to the bridge.
+//
+// * sets up the block header syncer, if the option is enabled.
 func NewManager(config *Config) *Manager {
 	var err error
 
@@ -104,6 +115,11 @@ func NewManager(config *Config) *Manager {
 
 	manager.server = manager.newServer()
 
+	if config.IsSyncBlockHeaderActive {
+		manager.deliverHeaderCh = make(chan deliverHeaderMsg, 1)
+		manager.syncer = manager.NewSyncer()
+	}
+
 	return manager
 }
 
@@ -118,12 +134,21 @@ func (m *Manager) Start() {
 		}
 	}()
 
-	log.Info("launching fromDevP2P channel consumer")
+	if m.config.IsSyncBlockHeaderActive {
+		log.Info("starting block header sync")
+
+		go m.syncer.Start()
+	}
 }
 
 // Stop terminates the server
 func (m *Manager) Stop() {
 	m.server.Stop()
+}
+
+// BestPeer makes available the best peer from the store
+func (m *Manager) BestPeer() *Peer {
+	return m.peerstore.bestPeer()
 }
 
 // parseBootnodesFile parses the bootnodes file to be included in the

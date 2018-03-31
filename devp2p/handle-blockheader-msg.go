@@ -13,15 +13,25 @@ func (m *Manager) handleBlockHeaderMsg(peer *Peer, msg *p2p.Msg) error {
 		return fmt.Errorf("Error Decoding message: %v %v", msg, err)
 	}
 
+	// ship the received headers
+	if m.config.IsSyncBlockHeaderActive {
+		m.deliverHeaderCh <- deliverHeaderMsg{
+			PeerID:  peer.String(),
+			Headers: headers,
+		}
+	}
+
 	// in protocolHandler() we did shot a request for the byzantium block.
 	// if we have that response here, let's check its hash, and drop
 	// the peer if it does not comply.
 	if len(headers) == 1 && headers[0].Number.Cmp(ByzantiumBlockNumberBigInt) == 0 {
 		// check hash
 		if headers[0].Hash().String() == ByzantiumBlockHashStr {
-			log.Debug("Peer byzantium block is OK")
+			log.Debugf("Peer byzantium block is OK: %v", peer.String())
 
-			m.peerScrapper(peer.id, "50-byzantium block check passed", "OK") // hook
+			m.peerScrapper(peer.String(), "50-byzantium block check passed", "OK") // hook
+
+			peer.byzantiumChecked = true
 
 			// no need to ship this to the outgoing channel, we synchronize from here
 			return nil
@@ -31,17 +41,11 @@ func (m *Manager) handleBlockHeaderMsg(peer *Peer, msg *p2p.Msg) error {
 			// this is the one corresponding to Ethereum Classic (ETC)
 			hashStr := fmt.Sprintf("%x", headers[0].Hash())
 
-			m.peerScrapper(peer.id, "49-byzantium block check failed", hashStr)
+			m.peerScrapper(peer.String(), "49-byzantium block check failed", hashStr)
 
 			return fmt.Errorf("Peer byzantium block check failed, got %s", hashStr)
 		}
 	}
-
-	// TODO
-	// validate the sealing (pow) of each received header
-
-	// TODO
-	// ship the headers to the DB
 
 	return nil
 }

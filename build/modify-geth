@@ -11,9 +11,9 @@ else
 	exit
 fi
 
-## Check out to version 1.8.1
+## Check out to version 1.8.3
 cd $GOPATH/src/github.com/ethereum/go-ethereum
-git checkout --quiet v1.8.1
+git checkout --quiet v1.8.3
 
 ## Shamelessly overwrite these geth library lines, avoiding cumbersome fork repositories.
 $SEDCMD "s/maxActiveDialTasks     = 16/maxActiveDialTasks = 60000/" $GOPATH/src/github.com/ethereum/go-ethereum/p2p/server.go
@@ -26,4 +26,4 @@ $SEDCMD "s/srv.log.Trace(\"Setting up connection failed\", \"id\", c.id, \"err\"
 
 ## This is the "bad kademlia" patch.
 ## Don't apply it unless you know what you are doing.
-## $SEDCMD "s/return len(a)\*8 - lz/return rand.Intn(257)/" $GOPATH/src/github.com/ethereum/go-ethereum/p2p/discover/node.go
+# $SEDCMD "s/return len(a)\*8 - lz/return rand.Intn(257)/" $GOPATH/src/github.com/ethereum/go-ethereum/p2p/discover/node.go

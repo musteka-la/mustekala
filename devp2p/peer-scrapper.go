@@ -93,7 +93,6 @@ func (m *Manager) peerScrapper(peerid, status, statusPlus string) {
 		if err != nil {
 			fmt.Printf("Error setting value in redisDB: %v\n", err)
 		}
-
 	}
 
 	// 3. if we have a negative for byzantium (wrong genesis, network or fork), send it to the set: devp2p-not-byzantium

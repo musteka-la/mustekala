@@ -11,7 +11,7 @@ _Modularized functionalities for the busy crypto developer_.
 * [Redis](https://redis.io/)
   * Version 4.0.8
 * Have Geth in your `$GOPATH`. (`go get github.com/ethereum/go-ethereum`)
-  * Check that you have at least version `v.1.8.1` (revision .`1e6741`)
+  * Check that you have at least version `v.1.8.2` (revision .`b8b9f7f44`)
 
 ### Services
 
