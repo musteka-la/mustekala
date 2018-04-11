@@ -1,0 +1,27 @@
+redis:
+  container_name: redis
+  image: redis
+  ports:
+    - "6379:6379"
+  volumes:
+    - ./redis-data:/data
+  entrypoint: redis-server --appendonly yes
+  restart: always
+
+## TODO
+## Run the golang container (mounting the executable we want)
+## Run the executable we mounted as a starting paramters
+
+bhs:
+  container_name: bhs
+  image: golang:1.9.2
+  ports:
+    - "30303:30303"
+  net: "host" # So we can access redis' 6379 locally
+  volumes:
+    # TODO
+    # There is an issue that prevent make to save the compiled file
+    # Forcing the user to perform the compiling manually on interactive mode.
+    - ./golang-data/src/github.com/metamask/mustekala/build/bin/:/bhs
+    - ./golang-data/src/github.com/metamask/mustekala/services/bootnodes-devp2p:/bhs/bootnodes-devp2p
+  command: "/bhs/block-header-syncer --devp2p-bootnodes /bhs/bootnodes-devp2p --debug --devp2p-lib-debug"

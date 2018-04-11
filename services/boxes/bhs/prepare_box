@@ -1,0 +1,36 @@
+#!/bin/bash
+
+################################################################################
+#
+# Prepare Box
+#
+#
+# Run this script in the machine you are going to deploy this block header
+# syncer box.
+#
+################################################################################
+
+# Step where you actually are
+CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd $CURRENT_DIR
+
+# Download golang 1.9.2 docker image
+docker pull golang:1.9.2
+
+# Download go-ethereum, set it to v1.8.3, "make" it
+docker run --rm -v $PWD/golang-data:/go --name install-geth golang:1.9.2 go get github.com/ethereum/go-ethereum
+docker run --rm -v $PWD/golang-data:/go --name install-geth golang:1.9.2 \
+    /bin/bash -c "cd /go/src/github.com/ethereum/go-ethereum && git checkout v1.8.3 && make geth"
+
+# Download redis image
+docker pull redis
+
+# Download the BHS code the first time and "go get" its dependencies
+docker run --rm -v $PWD/golang-data:/go --name install-bhs golang:1.9.2 \
+    /bin/bash -c "mkdir -p /go/src/github.com/MetaMask && cd /go/src/github.com/MetaMask && git clone https://github.com/MetaMask/mustekala.git"
+docker run --rm -v $PWD/golang-data:/go --name install-bhs golang:1.9.2 \
+    /bin/bash -c "cd /go/src/github.com/MetaMask/mustekala/services/block-header-syncer && go get ./..."
+
+# Since we are at it, let's "make" the block header syncer.
+docker run --rm -v $PWD/golang-data:/go --name install-bhs golang:1.9.2 \
+    /bin/bash -c "cd /go/src/github.com/MetaMask/mustekala && make block-header-syncer"
