@@ -65,4 +65,4 @@ parity:
   volumes:
     - /home/core/parity-data:/parity-data
     - /home/core/peers:/parity-peers
-  command: "--warp --no-ancient-blocks --no-serve-light --max-peers 250 --snapshot-peers 50 --min-peers 50 --mode active --tracing off --pruning fast --db-compaction ssd --cache-size 8192 --datadir /parity-data --ipfs-api --ipfs-api-port 5001 --ipfs-api-hosts all --ipfs-api-interface 0.0.0.0"
+  command: "--no-ancient-blocks --no-serve-light --max-peers 250 --snapshot-peers 50 --min-peers 50 --mode active --tracing off --pruning fast --db-compaction ssd --cache-size 4096 --datadir /parity-data --cache 8192 --ipfs-api --ipfs-api-port 5001 --ipfs-api-hosts all --ipfs-api-interface 0.0.0.0 --jsonrpc-apis=all --jsonrpc-interface=0.0.0.0"
