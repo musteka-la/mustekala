@@ -62,6 +62,8 @@ parity:
     - "5001:5001"
     # 30303 is the RLPx port, should be open to the internet
     - "30303:30303"
+    # JSON RPC Port
+    - "8545:8545"
   volumes:
     - /home/core/parity-data:/parity-data
     - /home/core/peers:/parity-peers
