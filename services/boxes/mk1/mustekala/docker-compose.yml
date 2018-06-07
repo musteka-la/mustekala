@@ -13,7 +13,7 @@ nginx-proxy:
     - /usr/share/nginx/html
     - /var/run/docker.sock:/tmp/docker.sock:ro
   environment:
-    DEFAULT_HOST: "musteka.la"
+    DEFAULT_HOST: "kitsunet.metamask.io"
 
 letsencrypt-nginx-proxy-companion:
   image: jrcs/letsencrypt-nginx-proxy-companion
@@ -46,10 +46,10 @@ ipld-eth-bridge:
   environment:
     ETH_HOST: "parity"
     ETH_PORT: "5001"
-    VIRTUAL_HOST: "${HOSTNAME}.musteka.la"
+    VIRTUAL_HOST: "${HOSTNAME}.kitsunet.metamask.io"
     VIRTUAL_PORT: "4003"
-    LETSENCRYPT_HOST: "${HOSTNAME}.musteka.la"
-    LETSENCRYPT_EMAIL: "admin@musteka.la"
+    LETSENCRYPT_HOST: "${HOSTNAME}.kitsunet.metamask.io"
+    LETSENCRYPT_EMAIL: "herman.junge@consensys.net"
 
 parity:
   image: parity/parity:stable
