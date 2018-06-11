@@ -151,19 +151,81 @@ IPFS, with the ability to link ethereum hashes in-protocol with IPLD.
 
 #### What is this?
 
-(TODO)
+**Kitsunet** (The fox network) is the mesh of MetaMask browser peers.
+
+This layer is concerned with discovering and connecting peers (via *libp2p*), as
+well as consuming, storing and sending *Ethereum-IPLD* data among these peers.
+
+The optimization on the transport of information (as well as its storage), taking
+advantage of the merkle trie data structure is domain of the **Layer 4** of this
+architecture.
 
 #### What do we know so far?
 
-(TODO)
+* Discovering: By using the js-ipfs client, we can leverage its DHT to discover
+  **libp2p** peers. This approach is insuficient, as we want, `a)` Find
+  *kitsunet* nodes and `b)` Have a granular approach to discovery, i.e.
+  privilege the finding of bridges and hubs, as well as other *kitsunet* nodes
+  running elements our client must be interested (See **Layer 4**, subsets).
+
+* Connecting: As our *kitsunet* clients will be running in browsers, it is
+  rather difficult to assign an arbitrary transport port to our service (as,
+  for example, the port `8545`). The compromise is found on using proxy servers
+  which our clients will connect to. An scaling protocol to facilitate the
+  connections among peers must be found, as well as an *easy to package*
+  solution to offer the users, so they can run their own **Hubs**. The goal:
+  Enable the *Kitsunet* clients to find their closest *Hub* to be part of the
+  mesh.
+
+* Consuming: While IPLD is not packaged in IPFS clients *out-of-the-box*, that
+  is, if you want to parse *ethereum-ipld* nodes, you need to have the plugin
+  installed in your client; The IPFS clients are able to deal with these
+  elements as *DAG Nodes* (*directed acyclic graph*). In other words, we can
+  ask any IPFS client for an ethereum ipld node, by using its hash. We will
+  realize soon, though, that this approach is elemental and not efficient, as
+  in order to get, for example, the balance of an ethereum account, starting
+  from a certain block header, you need to perform a non-trivial number of
+  traversal queries (6 to 8 as of 2018.06.11). It is imperative to work on
+  an overlay able to boost the exchange protocol of *DAG nodes*, taking
+  advantage of the blockchain merkle tree data structure. (See **Layer 4**).
+
+* Storing: This element is fundamental for the **Layer 4** of the architecture,
+  as each **kitsunet** client will store a number of subsets of the ethereum
+  state, as well as co-selector indexes.
+
+* Sending: This is the ability to deliver requested data to other peers, such
+  as, the latest block header (*pubsub*), ethereum state (*layer 4*) and
+  co-selector indexes. The ability to perform this feature represents of the
+  departure of light clients as mere consumers of information from hubs.
 
 #### MVP Features
 
-(TODO)
+* Simple *js-ipfs* client connecting via *libp2p* with a bridge and fetching
+  account and storage data. (aka *Naive mode*).
+* Rudimentary subscription to new block header.
+* Updating the **balance of an account**, on each new block header.
+* Updating the information of a particular smart contract by pulling its
+  storage trie from a **Bridge**. (No traversing, but at once).
+* **EVM Call** to extract information from this smart contract.
+* Partial adoption into MetaMask clients
+  * Telemetry monitoring.
+  * Adopt a "I have the subset of state XYZ" flag.
+  * Discovery of peers with similar "subset of state XYZ".
+  * Send transactions to the **Bridges**
+* Simulation of the network
 
 #### Beyond MVP
 
-(TODO)
+* Scale **kitsunet** to 1MM+ peers
+  * Signalling servers
+  * Rendevous servers
+  * **Emphasis** on containerized docker solutions to boost infrastructure.
+    and foment decentralization.
+* *PubSub* system for New Block Headers.
+* Transaction broadcasting and relaying throughout **kitsunet**.
+* Make modules available (*js*, *go*, *python*) to enable any program to
+  leverage kitsunet.
+* **GOLD**: Miners connecting to **kitsunet** listening for transactions.
 
 --------------------------------------------------------------------------------
 
@@ -171,18 +233,100 @@ IPFS, with the ability to link ethereum hashes in-protocol with IPLD.
 
 #### What is this?
 
-(TODO)
+The promise of **IPLD** (which stands for *InterPlanetary Linked Data*), is not
+only make clients be able to lookup and retrieve nodes, and gain knowledge on
+other nodes linking to them. Also, it is implied that new functionalities will
+be developed, such as **transformations**.
+
+Now, without aditional features, simple operations, like for instance, the
+traversal for an account take (as of 2018.06.11) 6 to 8 travels from the client
+to a source of data (*Bridge*, *Hub* or another client). Not to mention that
+it may be necessary for certain smart contracts, to obtain a good part of its
+storage trie.
+
+On the other hand, to pursue the ideal of decentralization, and to
+achieve the dream state of avoiding peers to hold huge ammount of bytes so they
+can work properly (as of 2018.06.11 the ethereum state is in the
+10-20GB mark), *kitsunet* needs to work as a **distributed storage of the
+ethereum data**.
+
+We want to accomplish this by developing a custom **Content Routing System**
+(**CRS**) able to function as an overlay to the *DAG Node* exchange protocol,
+and optimized to the use case of the Ethereum State.
 
 #### What do we know so far?
 
-(TODO)
+* [IPLD Use Case for Ethereum Light Client](https://github.com/ipld/ipld/issues/29)
 
-#### MVP Features
+* Features of the **Content Routing System** (**CRS**)
+  * Divide the state into **subsets** (avoiding the word *shard*),
+  which will be small, redundant, well spaced and useful to each peer.
 
-(TODO)
+  * Each peer of **kitsunet**, which, by the way can be not only a browser peer,
+  but a **Hub**, will maintain a number of these **subsets**, consisting on an
+  organized number of ethereum state and storage trie nodes, and will update
+  their elements as the *Block Header* of the *Canonical Chain* goes changing.
 
-#### Beyond MVP
+  * A peer will maintain, ideally, the *subsets* containing relevant data to its
+  operation, plus a couple of discrete *subsets* to ensure redundancy and
+  availability of the whole system.#### MVP Features.
 
-(TODO)
+  * Maintainers of *subsets* will require at each block header update an
+  **index** of a certain *subset* (ex: Index for subset `0x1a56`), to known
+  peers maintaining such *subset*. This query is ultimately located to a
+  **Bridge** peer in charge of maintaining this data by synchronizing it from
+  *devp2p*.
+
+  * An **index** consists on a list containing the first two bytes of each hash
+  belonging the *subset* of the state. Thus, for example, the index of the
+  subset `0x1a56` can be the list `[0x4505, 0xa5ac, 0x34ab...]`.
+
+  * The peer computes the received **index** against the stored **index** for
+  that subset, noting the differences (deltas) between them. These **deltas**
+  enable the peer to prepare the list of **needed nodes**.
+
+  * As the peer, by this process, can't know the **needed nodes** hashes at
+  full length; It needs to request them by their *relative reference*.
+  This is a reference including the *id* of the **subset** and their position.
+  For example, it will require "For the subset `0x1a56`, I need the nodes `2a`
+  and `35`, `36`", meaning that it needs the *ath child of the 2nd child* of
+  the head of this **subset** as well as the
+  `5th and 6th children of the 3rd child`.
+
+  * The **kitsunet CRS** will locate the peers providing these nodes and send
+  them to the requester.
+
+  * It won't be discarded the capacity of sending full **subsets** on demand,
+  to facilitate fast synchronizations.
+
+#### MVP and Beyond Features
+
+* Rudimentary Proof of Concept of description above.
+* Research
+  * "*Hot Caching*" of **Bridges** and, **Hubs**
+    * This is, a *hub* receives queries of a certain **subset**. If resources
+    are available, this *hub* will start maintaining this **subset** to
+    increase local redundancy and availability.
+  * *PubSub* features must be builtin into the **kitsunet CRS**
+  * Optimizations on *Co-selector indexes* to be outside **Bridges** and living
+  in **Hubs** and browser peers.
+* Relevant metrics
+  * Redundancy
+  * Availability
+  * Well Spacing
+  * Clustering (i.e. "How far of my neighbourhood I have to go to get data?")
+  * Data Exchange Rate
+
+#### The future!
+
+* COMPLETE Substitution of Ethereum JSON/RPC use.
+  * Updated Data Retrieval
+  * EVM Calls
+  * Transactions Broadcasting and Relaying.
+
+* Nice `localhost` WebApps to complement the **kitsunet** mesh
+  * State of the network
+  * Block Explorer
+  * Log Explorer
 
 --------------------------------------------------------------------------------

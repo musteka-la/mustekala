@@ -1,6 +1,6 @@
 ## Beyond MVP
 
-This is the wishlist, the vision for the project
+This is the aggregation of the "Beyond MVP" points written down in architecture.md
 
 * Reduce the distance from the **devp2p** network to the bucket
   * Optimize go-ethereum to insert the data directly into the **layer 2**
@@ -29,3 +29,13 @@ This is the wishlist, the vision for the project
 * Multi-blockchain support
   * As long as it uses content-addressed data
 
+* Scale **kitsunet** to 1MM+ peers
+  * Signalling servers
+  * Rendevous servers
+  * **Emphasis** on containerized docker solutions to boost infrastructure.
+    and foment decentralization.
+* *PubSub* system for New Block Headers.
+* Transaction broadcasting and relaying throughout **kitsunet**.
+* Make modules available (*js*, *go*, *python*) to enable any program to
+  leverage kitsunet.
+* **GOLD**: Miners connecting to **kitsunet** listening for transactions.
