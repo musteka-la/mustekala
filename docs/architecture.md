@@ -28,7 +28,7 @@ performance: levelDB and RocksDB respectively.
 The current state of the art (as of 2018.06.08) allows to obtain the needed
 data in two ways:
 
-* By having a client discover the peers of the network andconnecting to them,
+* By having a client discovering the peers of the network, connecting to them,
 and running the **devp2p** protocols *eth/62* and *eth/63* (aka "fast") and
 asking for the data needed. While this is the _de-facto_ process, it has been
 observed with a very low rate of success, both finding what we can call
