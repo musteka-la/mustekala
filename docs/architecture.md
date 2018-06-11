@@ -35,12 +35,12 @@ observed with a very low rate of success, both finding what we can call
 "good nodes" as the velocity of perform the actual synchronization.
 
   * Is important to mention that the storage size of all the ethereum states
-(i.e. an "Archive Node") is (as 2017.06.08) in the vicinity og 1TB. A single
+(i.e. an "Archive Node") is (as 2017.06.08) in the vicinity of 1TB. A single
 block state is in the range of 10GB to 20GB. Which makes unsustainable for
 the casual user to maintain.
 
   * Moreover, while each main client offers a flavor of light client, there are
-a number of caveats, namely, the chance of finding a synchronized run willing
+a number of caveats, namely, the chance of finding a synchronized one willing
 to accept this light client connection.
 
   * Also. As the synchronization process consist on processing the transactions
