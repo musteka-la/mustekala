@@ -34,16 +34,16 @@ asking for the data needed. While this is the _de-facto_ process, it has been
 observed with a very low rate of success, both finding what we can call
 "good nodes" as the velocity of perform the actual synchronization.
 
-* Is important to mention that the storage size of all the ethereum states
+  * Is important to mention that the storage size of all the ethereum states
 (i.e. an "Archive Node") is (as 2017.06.08) in the vicinity og 1TB. A single
 block state is in the range of 10GB to 20GB. Which makes unsustainable for
 the casual user to maintain.
 
-* Moreover, while each main client offers a flavor of light client, there are
+  * Moreover, while each main client offers a flavor of light client, there are
 a number of caveats, namely, the chance of finding a synchronized run willing
 to accept this light client connection.
 
-* Also. As the synchronization process consist on processing the transactions
+  * Also. As the synchronization process consist on processing the transactions
 indicated on each block, in order to be able to update the stored stated, the
 user finds herself constantly with a high usage of resources. Making this
 process expensive for consumer grade devices.
