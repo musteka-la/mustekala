@@ -269,7 +269,7 @@ and optimized to the use case of the Ethereum State.
 
   * A peer will maintain, ideally, the *subsets* containing relevant data to its
   operation, plus a couple of discrete *subsets* to ensure redundancy and
-  availability of the whole system.#### MVP Features.
+  availability of the whole system.
 
   * Maintainers of *subsets* will require at each block header update an
   **index** of a certain *subset* (ex: Index for subset `0x1a56`), to known
