@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/metamask/mustekala/db"
-	"github.com/metamask/mustekala/devp2p"
+	"github.com/metamask/mustekala/services/lib/db"
+	"github.com/metamask/mustekala/services/lib/devp2p"
 )
 
 func main() {

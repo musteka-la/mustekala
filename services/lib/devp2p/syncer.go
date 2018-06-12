@@ -6,8 +6,8 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 
-	"github.com/metamask/mustekala/db"
-	"github.com/metamask/mustekala/devp2p/downloader"
+	"github.com/metamask/mustekala/services/lib/db"
+	"github.com/metamask/mustekala/services/lib/devp2p/downloader"
 )
 
 // Syncer is the coordinator of the block header syncer service.
