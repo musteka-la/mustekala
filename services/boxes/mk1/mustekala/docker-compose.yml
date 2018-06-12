@@ -52,7 +52,7 @@ ipld-eth-bridge:
     LETSENCRYPT_EMAIL: "herman.junge@consensys.net"
 
 parity:
-  image: parity/parity:stable
+  image: parity/parity:v1.10.6
   container_name: parity
   restart: always
   ports:
@@ -67,4 +67,6 @@ parity:
   volumes:
     - /home/core/parity-data:/parity-data
     - /home/core/peers:/parity-peers
+    # Use this to log everything
+    # -laccount_bloom,basicauthority,chain,client,dapps,discovery,diskmap,enact,engine,estimate_gas,ethash,executive,ext,external_tx,externalities,fatdb,fetch,hypervisor,ipc,jdb,journaldb,les,les_provider,local_store,migration,miner,mode,network,on_demand,own_tx,perf,poa,rcdb,shutdown,signer,snapshot,snapshot_io,snapshot_watcher,spec,state,stats,stratum,sync,trie,txqueue,updater=trace
   command: "--no-ancient-blocks --no-serve-light --max-peers 250 --snapshot-peers 50 --min-peers 50 --mode active --tracing off --pruning fast --db-compaction ssd --cache-size 4096 --datadir /parity-data --cache 8192 --ipfs-api --ipfs-api-port 5001 --ipfs-api-hosts all --ipfs-api-interface 0.0.0.0 --jsonrpc-apis=all --jsonrpc-interface=0.0.0.0"
