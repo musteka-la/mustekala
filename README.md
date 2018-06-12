@@ -1,10 +1,17 @@
 ## MUSTEKALA
 
-A blockchain service framework.
+MetaMask Light Client Development.
 
-_Modularized functionalities for the busy crypto developer_.
+In one line: Ethereum on IPFS.
 
-### Development Requirements
+### Quick Links
+
+* [Documentation of the project](https://github.com/MetaMask/mustekala/issues/4)
+* [Architecture](https://github.com/MetaMask/mustekala/blob/master/docs/architecture.md)
+
+### Services
+
+#### Development Requirements
 
 * Go 1.9.2
   * (See [This issue](https://github.com/ethereum/go-ethereum/issues/15752#issuecomment-354271572))
@@ -12,8 +19,6 @@ _Modularized functionalities for the busy crypto developer_.
   * Version 4.0.8
 * Have Geth in your `$GOPATH`. (`go get github.com/ethereum/go-ethereum`)
   * Check that you have at least version `v.1.8.2` (revision .`b8b9f7f44`)
-
-### Services
 
 #### DevP2P Node Scrapper
 
