@@ -6,7 +6,7 @@ nginx-proxy:
     # 80 should be open to the internet for letsencrypt purposes
     - "80:80"
     # 443 should be open to the internet for wss
-    - "443:30334"
+    - "443:443"
   volumes:
     - /home/core/ssl-certs:/etc/nginx/certs:ro
     - /etc/nginx/vhost.d
@@ -28,13 +28,17 @@ letsencrypt-nginx-proxy-companion:
 ipfs-rendezvous-experiment:
   image: dryajov/ipfs-rendezvous-experiment
   restart: always
+  expose:
+    # This port is the one that nginx-proxy container will use to redirect calls
+    # Has to be represented in the environment variable VIRTUAL_PORT below
+    - "30334"
   ports:
     - "30333:30333"
     - "30334:30334"
   environment:
-    - "ENV_ID=${ENV_ID}"
+    ENV_ID: ${HOSTNAME}"
+    VIRTUAL_HOST: "${HOSTNAME}.kitsunet.metamask.io"
     VIRTUAL_PORT: "30334"
-    VIRTUAL_HOST: "${ENV_ID}.kitsunet.metamask.io"
-    LETSENCRYPT_HOST: "${ENV_ID}.kitsunet.metamask.io"
-    LETSENCRYPT_EMAIL: "admin@metamask.io"
+    LETSENCRYPT_HOST: "${HOSTNAME}.kitsunet.metamask.io"
+    LETSENCRYPT_EMAIL: "herman.junge@consensys.net"
 
