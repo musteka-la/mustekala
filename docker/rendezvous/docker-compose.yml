@@ -36,7 +36,7 @@ ipfs-rendezvous-experiment:
     - "30333:30333"
     - "30334:30334"
   environment:
-    ENV_ID: ${ENV_ID}"
+    ENV_ID: "${ENV_ID}"
     VIRTUAL_HOST: "${ENV_ID}.kitsunet.metamask.io"
     VIRTUAL_PORT: "30334"
     LETSENCRYPT_HOST: "${ENV_ID}.kitsunet.metamask.io"
