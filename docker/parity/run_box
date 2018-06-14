@@ -1,0 +1,3 @@
+#!/bin/bash
+
+HOSTNAME=$HOSTNAME /opt/bin/docker-compose up -d
