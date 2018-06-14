@@ -1,5 +1,5 @@
 dryajov/ipfs-rendezvous-experiment:
   restart: always
   ports:
-    - "3333:3333"
-    - "3334:3334"
+    - "30333:30333"
+    - "30334:30334"
