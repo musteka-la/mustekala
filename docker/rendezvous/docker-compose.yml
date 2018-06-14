@@ -1,6 +1,8 @@
 ipfs-rendezvous-experiment:
   image: dryajov/ipfs-rendezvous-experiment
   restart: always
+  environment:
+    - "ENV_ID=${HOSTNAME}"
   ports:
     - "30333:30333"
     - "30334:30334"
