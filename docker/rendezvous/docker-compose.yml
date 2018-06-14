@@ -1,4 +1,5 @@
-dryajov/ipfs-rendezvous-experiment:
+ipfs-rendezvous-experiment:
+  image: dryajov/ipfs-rendezvous-experiment
   restart: always
   ports:
     - "30333:30333"
