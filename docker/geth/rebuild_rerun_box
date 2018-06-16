@@ -5,11 +5,13 @@ CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ## In case is running
 ./stop_box
 
-## Pull mustekala geth
-cd /home/core/
-mkdir -p mustekala-geth
-git pull git@github.com:MetaMask/go-ethereum.git /home/core
+## Update mustekala geth
+## You must have done in the past
+##   mkdir -p /home/core/mustekala-geth
+##   git clone https://github.com/MetaMask/go-ethereum.git /home/core/mustekala-geth
+cd /home/core/mustekala-geth
 git checkout feat/trie-siphon
+git pull
 
 ## Go back
 cd $CURRENT_DIR
