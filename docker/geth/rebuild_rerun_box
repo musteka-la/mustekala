@@ -1,0 +1,25 @@
+#!/bin/bash
+
+CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+## In case is running
+./stop_box
+
+## Pull mustekala geth
+cd /home/core/
+mkdir -p mustekala-geth
+git pull git@github.com:MetaMask/go-ethereum.git /home/core
+git checkout feat/trie-siphon
+
+## Go back
+cd $CURRENT_DIR
+
+## Rebuild geth
+docker run -ti --rm --name compile-geth \
+	-v /home/core/mustekala-geth:/go/src/github.com/metamask/go-ethereum \
+	-w /go/src/github.com/metamask/go-ethereum \
+	golang:1.10.3 \
+	make geth
+
+## Start the container
+./run_box
