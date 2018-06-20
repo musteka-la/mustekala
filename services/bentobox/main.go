@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/metamask/mustekala/services/bentobox/db"
+	"github.com/metamask/mustekala/services/bentobox/eth"
 )
 
 func main() {
@@ -12,14 +13,17 @@ func main() {
 
 	// load PostgreSQL Database
 	dbOpts := db.Options{
-		User:     *cfg.DbUser,
-		Password: *cfg.DbPassword,
-		DBName:   *cfg.DbName,
+		User:     cfg.DbUser,
+		Password: cfg.DbPassword,
+		DBName:   cfg.DbName,
 	}
 	dbmap := db.InitDb(dbOpts)
 	defer dbmap.Db.Close()
 
 	// PLACEHOLDER
-	fmt.Printf("OK")
+	// Just do a single last block query
+	eth.GetNetworkHeight(cfg.EthHost)
+
+	fmt.Printf("OK!\n")
 	// PLACEHOLDER
 }
