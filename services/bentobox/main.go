@@ -1,24 +1,25 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/metamask/mustekala/services/bentobox/db"
+)
 
 func main() {
 	// get the flags
 	cfg := ParseFlags()
 
-	// Load SQL Database
-	/*
-		dbOpts := database.Options{
-			User:     *optionsDBUser,
-			Password: *optionsDBPassword,
-			DBName:   *optionsDBName,
-		}
-		dbmap := database.InitDb(dbOpts)
-		defer dbmap.Db.Close()
-	*/
+	// load PostgreSQL Database
+	dbOpts := db.Options{
+		User:     *cfg.DbUser,
+		Password: *cfg.DbPassword,
+		DBName:   *cfg.DbName,
+	}
+	dbmap := db.InitDb(dbOpts)
+	defer dbmap.Db.Close()
 
 	// PLACEHOLDER
-	_ = cfg
 	fmt.Printf("OK")
 	// PLACEHOLDER
 }

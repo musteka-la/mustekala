@@ -9,48 +9,68 @@ import (
 	gorp "gopkg.in/gorp.v1"
 )
 
+// Options keep db conn parameters
 type Options struct {
 	User     string
 	Password string
 	DBName   string
 }
 
+// LastBlock tracks the canonical chain.
+// We index using the last inserted value, as there are
+// always chances to rewrites.
 type LastBlock struct {
-	NumberId          int64 `db:"number_id"`
-	ReceivedTimestamp int64 `db:"received_timestamp"`
+	InsertedTS int64 `db:"inserted_ts"` // doubles as PK
+	NumberId   int64 `db:"number_id"`
 }
 
-type Block struct {
-	BlockNumberId int64          `db:"block_number_id"`
-	BlockNumber   sql.NullString `db:"block_number"`
-	BlockHash     sql.NullString `db:"block_hash"`
+// WantFromDevp2p is the least of wanted data for our agents
+// to retrieve from different devp2p clients
+type WantFromDevp2p struct {
+	InsertedTS    int64  `db:"inserted_ts"`     // doubles as PK
+	Kind          string `db:"kind"`            // block body, tx receipt, etc
+	Key           string `db:"key"`             // id or hash required
+	LastRequestTS int64  `db:"last_request_ts"` // last time we sent a req for this key
+	SuccessTS     int64  `db:"success_ts"`      // so we know to not ask again for it
 }
 
-type Block struct {
-	BlockNumberId int64          `db:"block_number_id"`
-	BlockNumber   sql.NullString `db:"block_number"`
-	BlockHash     sql.NullString `db:"block_hash"`
+// EthData is the data retrieved from the devp2p clients
+// we try to keep for the longest time possible our data in
+// here, to give the chance to agents to add it into several libp2p
+// availabilities, however in the future we may want to prune
+// this table.
+type EthData struct {
+	InsertedTS    int64  `db:"inserted_ts"`
+	Kind          string `db:"kind"`             // block body, tx receipt, etc
+	Hash          string `db:"hash"`             // ethereum hash id
+	CID           string `db:"cid"`              // ipld cid, useful, so we compute it once
+	Value         string `db:"value"`            // stored in stringed hex
+	LastIPFSAddTS int64  `db:"last_ipfs_add_ts"` // last time a client tried to add it into IPFS
+	IPFSSuccessTS int64  `db:"ipfs_success_ts"`  // so we know that we have add it at least once
+
 }
 
-type Transaction struct {
-	TransactionHash  sql.NullString `db:"transaction_hash"`
-	BlockNumber      sql.NullString `db:"tx_block_number"`
-	TransactionIndex sql.NullString `db:"transaction_index"`
-	From             sql.NullString `db:"tx_from"`
-	To               sql.NullString `db:"tx_to"`
+// BlockTx is useful to find out whether we have all the
+// transactions of a block, so we can prepare their
+// representation as trie elements
+type BlockTX struct {
+	InsertedTS int64  `db:"inserted_ts"`
+	BlockID    string `db:"block_id"`
+	TxId       string `db:"tx_id"`
 }
 
-type Log struct {
-	Id              int64          `db:"id"`
-	TransactionHash sql.NullString `db:"log_transaction_hash"`
-	Data            sql.NullString `db:"data"`
-	LogIndex        sql.NullString `db:"log_index"`
-	Type            sql.NullString `db:"mined"`
+// BlockNumberofTx give us how many transactions a block has
+type BlockNumberofTx struct {
+	InsertedTS  int64  `db:"inserted_ts"`
+	BlockID     string `db:"block_id"`
+	NumberOfTxs int64  `db:"number_of_txs"`
 }
 
-type Topic struct {
-	LogId   int64          `db:"log_id"`
-	Content sql.NullString `db:"content"`
+// TxReceipt maps transactions against their receipts
+type TxReceipts struct {
+	InsertedTS   int64  `db:"inserted_ts"`
+	TxId         string `db:"tx_id"`
+	TxReceiptsId string `db:"tx_receipts_id"`
 }
 
 func InitDb(options Options) *gorp.DbMap {
@@ -64,15 +84,12 @@ func InitDb(options Options) *gorp.DbMap {
 
 	dbmap := &gorp.DbMap{Db: db, Dialect: gorp.PostgresDialect{}}
 
-	dbmap.AddTableWithName(Block{}, "blocks")
-	dbmap.AddTableWithName(Transaction{}, "transactions")
-	dbmap.AddTableWithName(Log{}, "logs").SetKeys(true, "Id")
-	dbmap.AddTableWithName(Topic{}, "topics")
-
-	err = dbmap.CreateTablesIfNotExists()
-	if err != nil {
-		log.Fatalf("Create tables failed %v", err)
-	}
+	dbmap.AddTableWithName(LastBlock{}, "lastblock")
+	dbmap.AddTableWithName(WantFromDevp2p{}, "wantfromdevp2p")
+	dbmap.AddTableWithName(EthData{}, "ethdata")
+	dbmap.AddTableWithName(BlockTX{}, "blocktx")
+	dbmap.AddTableWithName(BlockNumberofTx{}, "blocknumberoftx")
+	dbmap.AddTableWithName(TxReceipts{}, "txreceipts")
 
 	return dbmap
 }

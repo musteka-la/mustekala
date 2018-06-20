@@ -1,7 +1,7 @@
 ## BentoBox
 
-Microservice. Polls a *parity* JSON/RPC endpoint. On new block header,
-it will extract certain specified data.
+Microservice. Polls a *parity* or *go-ethereum* JSON/RPC endpoint.
+On new block header it will extract certain specified data.
 
 ### Quick Start
 
@@ -56,6 +56,13 @@ psql -U postgres bentobox < database.sql
 
 You are good to go.
 
-### Usage
+### Command Line Options
 
-* (TODO)
+| Options | Description | Default |
+| --- | --- | --- |
+| dbname | Postgres DB name | bentobox |
+| dbuser | Postgres DB user name | postgres |
+| dbpassword | Postgres DB user password | mysecretpassword |
+| eth-host | URL of the ethereum JSON RPC source of data | http://127.0.0.1:8545/ |
+| ipfs-host | URL of the ipfs HTTP API | http://127.0.0.1:5001/ |
+| last-block-polling-interval | value in seconds for the last block polling | 1 |

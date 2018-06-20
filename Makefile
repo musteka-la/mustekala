@@ -15,7 +15,7 @@ run-psql:
 		--net=host \
 		--name psql \
 		-e POSTGRES_PASSWORD=mysecretpassword \
-		-v ${PWD}:/workdir \
+		-v ${PWD}/services/bentobox:/workdir \
 		-v ${HOME}/.psql:/var/lib/postgresql/data \
 		postgres
 clean:

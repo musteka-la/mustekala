@@ -1,8 +1,15 @@
 package main
 
+import "flag"
+
 // Config has all the options you defined at the command line.
 type Config struct {
-	Debug bool
+	DbUser       *string
+	DbPassword   *string
+	DbName       *string
+	EthHost      *string
+	IpfsHost     *string
+	PollInterval *int
 }
 
 // ParseFlags gets those command line options
@@ -10,14 +17,14 @@ type Config struct {
 func ParseFlags() *Config {
 	cfg := &Config{}
 
-	// optionsDBUser := flag.String("dbuser", "postgres", "database username")
-	// optionsDBPassword := flag.String("dbpassword", "mysecretpassword", "database password")
-	// optionsDBName := flag.String("dbname", "bentobox", "database name")
+	cfg.DbUser = flag.String("dbuser", "postgres", "database username")
+	cfg.DbPassword = flag.String("dbpassword", "mysecretpassword", "database password")
+	cfg.DbName = flag.String("dbname", "bentobox", "database name")
 
-	// optionsHost := flag.String("host", "http://127.0.0.1:8545", "URL of the ethereum node RPC")
-	// optionsMaxProcessingQueries := flag.Int("maxprocessingqueries", 100,
-	//	"Maximum of concurrent queries to the RPC Node")
-	// optionsLoopTimeMs := flag.Int("looptimems", 5000, "Iteration interval for block querying")
+	cfg.EthHost = flag.String("eth-host", "http://127.0.0.1:8545", "URL of the ethereum node RPC")
+	cfg.IpfsHost = flag.String("ipfs-host", "http://127.0.0.1:5001", "URL of the IPFS HTTP API")
+
+	cfg.PollInterval = flag.Int("last-block-polling-interval", 1, "Iteration interval for last block querying")
 
 	return cfg
 }
