@@ -1,0 +1,52 @@
+nginx-proxy:
+  build: ./nginx-proxy/.
+  container_name: nginx-proxy
+  restart: always
+  ports:
+    # 80 should be open to the internet for letsencrypt purposes
+    - "80:80"
+    # 443 should be open to the internet for wss
+    - "443:443"
+  volumes:
+    - /home/core/ssl-certs:/etc/nginx/certs:ro
+    - /etc/nginx/vhost.d
+    - /usr/share/nginx/html
+    - /var/run/docker.sock:/tmp/docker.sock:ro
+  environment:
+    DEFAULT_HOST: "kitsunet.metamask.io"
+
+letsencrypt-nginx-proxy-companion:
+  image: jrcs/letsencrypt-nginx-proxy-companion
+  container_name: letsencrypt-nginx-proxy-companion
+  restart: always
+  volumes_from:
+    - nginx-proxy
+  volumes:
+    - /home/core/ssl-certs:/etc/nginx/certs:rw
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+
+ipld-eth-bridge:
+  build: ../.
+  container_name: ipld-eth-bridge
+  restart: always
+  expose:
+    # This port is the one that nginx-proxy container will use to redirect calls
+    # Has to be represented in the environment variable VIRTUAL_PORT below
+    - "4003"
+  ports:
+    # 4001 is the ipfs swarm port
+    - "4001:4002"
+    # 5002 should be closed in the machine,
+    # and is mapped so we can perform local diagnostics with curl
+    - "5002:5002"
+  volumes:
+    - /home/core/ipfs-data:/www/ipfs-repo
+  links:
+    - parity
+  environment:
+    ETH_HOST: "parity"
+    ETH_PORT: "5001"
+    VIRTUAL_HOST: "${HOSTNAME}.kitsunet.metamask.io"
+    VIRTUAL_PORT: "4003"
+    LETSENCRYPT_HOST: "${HOSTNAME}.kitsunet.metamask.io"
+    LETSENCRYPT_EMAIL: "herman.junge@consensys.net"
