@@ -111,6 +111,6 @@ func (e *EthManager) LastBlockLoop() {
 		}
 
 		// Avoid the dreaded all-devouring loop
-		time.Sleep(e.pollIntervalMS * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 	}
 }
