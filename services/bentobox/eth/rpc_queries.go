@@ -8,12 +8,12 @@ import (
 	"strings"
 )
 
-// GetNetworkHeight will send an eth_blockNumber request and
+// getNetworkHeight will send an eth_blockNumber request and
 // parse its results
-func GetNetworkHeight(url string) (response int64, err error) {
+func (e *EthManager) getNetworkHeight() (response int64, err error) {
 	body := `{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":42}`
 	target := ethBlockNumber{}
-	if err = requestAndParseJSON(url, body, &target); err != nil {
+	if err = requestAndParseJSON(e.ethJsonRPC, body, &target); err != nil {
 		log.Printf("Query Error: %v", err)
 		return -1, err
 	}
@@ -23,10 +23,6 @@ func GetNetworkHeight(url string) (response int64, err error) {
 		log.Printf("Parse Error: %v", err)
 		return -1, err
 	}
-
-	// PLACEHOLDER
-	log.Printf("Success, we should store these goodies in the goodie room. Height: %d", response)
-	// PLACEHOLDER
 
 	// won't log non error responses as this is a very frequent query
 	return

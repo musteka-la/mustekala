@@ -10,9 +10,15 @@ in the below section "Run and Configure a PostgreSQL using docker"
 
 	make bentobox && ./build/bin/bentobox
 
-### Run and Configure a PostgreSQL using docker
+### Run and Configure a PostgreSQL DB using docker
 
-Just use the command (from this repository root)
+Create this custom container (logs all queries)
+
+```
+make custom-psql-image
+```
+
+Then, just use the command, always from this repository root
 
 ```
 make run-psql

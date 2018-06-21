@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/metamask/mustekala/services/bentobox/db"
 	"github.com/metamask/mustekala/services/bentobox/eth"
 )
@@ -20,10 +18,27 @@ func main() {
 	dbmap := db.InitDb(dbOpts)
 	defer dbmap.Db.Close()
 
-	// PLACEHOLDER
-	// Just do a single last block query
-	eth.GetNetworkHeight(cfg.EthHost)
+	// setup the eth manager
+	ethManager := eth.NewManager(cfg.EthHost, cfg.PollInterval, dbmap)
 
-	fmt.Printf("OK!\n")
-	// PLACEHOLDER
+	// start network height (last block) loop
+	go ethManager.LastBlockLoop()
+
+	// start the eth query dispatcher loop
+	//   reads the wanted from devp2p table
+	//   and sends queries
+	// TODO
+
+	// start the ipfs loader loop
+	//  reads the eth data table, find the elements
+	//  not already added, to include them
+	// TODO
+
+	// TODO
+	// we don't have proper metrics yet
+	// shame on you herman
+
+	// TODO
+	// Make it a graceful shutdown with SIGINT
+	select {}
 }

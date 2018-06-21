@@ -9,6 +9,9 @@ block-header-syncer:
 bentobox:
 	go build -v -o ./build/bin/bentobox ./services/bentobox/*.go
 
+custom-psql-image:
+	docker build docker/custom-psql/. -t mustekala-psql
+
 run-psql:
 	docker run \
 		-ti --rm \
@@ -17,6 +20,6 @@ run-psql:
 		-e POSTGRES_PASSWORD=mysecretpassword \
 		-v ${PWD}/services/bentobox:/workdir \
 		-v ${HOME}/.psql:/var/lib/postgresql/data \
-		postgres
+		mustekala-psql
 clean:
 	rm -rf build/bin/*
