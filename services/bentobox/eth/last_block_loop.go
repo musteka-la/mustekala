@@ -3,6 +3,7 @@ package eth
 import (
 	"database/sql"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/metamask/mustekala/services/bentobox/db"
@@ -90,7 +91,7 @@ func (e *EthManager) LastBlockLoop() {
 			}
 
 			// avoid below storage code, if is the same last block as in memory
-			if response == lastDbBlock.NumberId {
+			if lastDbBlock != nil && response == lastDbBlock.NumberId {
 				time.Sleep(500 * time.Millisecond)
 				continue
 			}
@@ -107,7 +108,32 @@ func (e *EthManager) LastBlockLoop() {
 				log.Printf("Error inserting last block tuple %v: %v", lastBlockTuple, err)
 			}
 
-			// we good, keep going
+			/////////////////////////////
+			//
+			// TODO
+			//
+			// Publish to the network that we have a chain head update!
+			//   (or figure out another agent listening to notifications
+			//   from these agents, and deciding to push this notif)
+			//
+			/////////////////////////////
+
+			// Add the block body (head + txs in the RPC)
+			// to the devp2p wanted list
+			wantedData := db.WantFromDevp2p{
+				InsertedTS:    time.Now().UnixNano(),
+				Kind:          "block_body",
+				Key:           strconv.FormatInt(response, 10),
+				LastRequestTS: 0,
+				SuccessTS:     0,
+			}
+
+			if err := e.dbMap.Insert(&wantedData); err != nil {
+				log.Printf("Error inserting block body to devp2p wanted list %v: %v",
+					lastBlockTuple, err)
+			}
+
+			// should be good to go now...
 		}
 
 		// Avoid the dreaded all-devouring loop
