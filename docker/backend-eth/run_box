@@ -1,3 +1,5 @@
 #!/bin/bash
 
+docker network create mustekala  || true
+
 HOSTNAME=$HOSTNAME /opt/bin/docker-compose up -d
