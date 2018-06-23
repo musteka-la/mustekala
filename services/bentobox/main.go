@@ -19,7 +19,12 @@ func main() {
 	defer dbmap.Db.Close()
 
 	// setup the eth manager
-	ethManager := eth.NewManager(cfg.EthHost, cfg.PollInterval, dbmap)
+	ethManager := eth.NewManager(
+		cfg.EthHost,
+		cfg.PollInterval,
+		cfg.EthRPCMaxQueries,
+		cfg.EthRPCRedoQueryTime,
+		dbmap)
 
 	// start network height (last block) loop
 	go ethManager.LastBlockLoop()
@@ -27,7 +32,7 @@ func main() {
 	// start the eth query dispatcher loop
 	//   reads the wanted from devp2p table
 	//   and sends queries
-	// TODO
+	go ethManager.RpcDispatcherLoop()
 
 	// start the ipfs loader loop
 	//  reads the eth data table, find the elements
