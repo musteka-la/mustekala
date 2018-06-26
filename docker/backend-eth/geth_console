@@ -1,0 +1,3 @@
+#!/bin/bash
+
+docker exec -ti -w /go/src/github.com/metamask/go-ethereum/build/bin mustekala-geth ./geth attach /geth-data/geth.ipc
