@@ -35,6 +35,10 @@ ipfs-rendezvous-experiment:
   ports:
     - "30333:30333"
     - "30334:30334"
+  ulimits:
+    nofile:
+      soft: 20000
+      hard: 40000
   environment:
     ENV_ID: "${ENV_ID}"
     VIRTUAL_HOST: "${ENV_ID}.kitsunet.metamask.io"
