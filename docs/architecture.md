@@ -133,7 +133,7 @@ IPFS, with the ability to link ethereum hashes in-protocol with IPLD.
 * Implement ipfs-cluster as **Bridge**
 * Scalable, clusterizable database (SQL DBMS) as IPFS datastore
 * Efficient *pub/sub* system to notify on new blocks
-  * And indexing of subsets of the state (see **layer 4**)
+  * And indexing of **slices** of the state (see **layer 4**)
 * Ethereum transactions should be facilitated by the **Hubs** and **Bridges**
 * Pruning of data service (highly configurable)
 * Maintainance of co-señector indexes, such as
@@ -166,7 +166,7 @@ architecture.
   **libp2p** peers. This approach is insuficient, as we want, `a)` Find
   *kitsunet* nodes and `b)` Have a granular approach to discovery, i.e.
   privilege the finding of bridges and hubs, as well as other *kitsunet* nodes
-  running elements our client must be interested (See **Layer 4**, subsets).
+  running elements our client must be interested (See **Layer 4**, **slices**).
 
 * Connecting: As our *kitsunet* clients will be running in browsers, it is
   rather difficult to assign an arbitrary transport port to our service (as,
@@ -190,7 +190,7 @@ architecture.
   advantage of the blockchain merkle tree data structure. (See **Layer 4**).
 
 * Storing: This element is fundamental for the **Layer 4** of the architecture,
-  as each **kitsunet** client will store a number of subsets of the ethereum
+  as each **kitsunet** client will store a number of **slices** of the ethereum
   state, as well as co-selector indexes.
 
 * Sending: This is the ability to deliver requested data to other peers, such
@@ -209,8 +209,8 @@ architecture.
 * **EVM Call** to extract information from this smart contract.
 * Partial adoption into MetaMask clients
   * Telemetry monitoring.
-  * Adopt a "I have the subset of state XYZ" flag.
-  * Discovery of peers with similar "subset of state XYZ".
+  * Adopt a "I have the **slice** of state XYZ" flag.
+  * Discovery of peers with similar "**slice** of state XYZ".
   * Send transactions to the **Bridges**
 * Simulation of the network
 
@@ -259,44 +259,44 @@ and optimized to the use case of the Ethereum State.
 * [IPLD Use Case for Ethereum Light Client](https://github.com/ipld/ipld/issues/29)
 
 * Features of the **Content Routing System** (**CRS**)
-  * Divide the state into **subsets** (avoiding the word *shard*),
+  * Divide the state into **slices** (avoiding the word *shard*),
   which will be small, redundant, well spaced and useful to each peer.
 
   * Each peer of **kitsunet**, which, by the way can be not only a browser peer,
-  but a **Hub**, will maintain a number of these **subsets**, consisting on an
+  but a **Hub**, will maintain a number of these **slices**, consisting on an
   organized number of ethereum state and storage trie nodes, and will update
   their elements as the *Block Header* of the *Canonical Chain* goes changing.
 
-  * A peer will maintain, ideally, the *subsets* containing relevant data to its
-  operation, plus a couple of discrete *subsets* to ensure redundancy and
+  * A peer will maintain, ideally, the *slice* containing relevant data to its
+  operation, plus a couple of discrete *slices* to ensure redundancy and
   availability of the whole system.
 
-  * Maintainers of *subsets* will require at each block header update an
-  **index** of a certain *subset* (ex: Index for subset `0x1a56`), to known
-  peers maintaining such *subset*. This query is ultimately located to a
+  * Maintainers of *slices* will require at each block header update an
+  **index** of a certain *slice* (ex: Index for slice `0x1a56`), to known
+  peers maintaining such *slice*. This query is ultimately located to a
   **Bridge** peer in charge of maintaining this data by synchronizing it from
   *devp2p*.
 
   * An **index** consists on a list containing the first two bytes of each hash
-  belonging the *subset* of the state. Thus, for example, the index of the
-  subset `0x1a56` can be the list `[0x4505, 0xa5ac, 0x34ab...]`.
+  belonging the *slice* of the state. Thus, for example, the index of the
+  slice `0x1a56` can be the list `[0x4505, 0xa5ac, 0x34ab...]`.
 
   * The peer computes the received **index** against the stored **index** for
-  that subset, noting the differences (deltas) between them. These **deltas**
+  that slice, noting the differences (deltas) between them. These **deltas**
   enable the peer to prepare the list of **needed nodes**.
 
   * As the peer, by this process, can't know the **needed nodes** hashes at
   full length; It needs to request them by their *relative reference*.
-  This is a reference including the *id* of the **subset** and their position.
-  For example, it will require "For the subset `0x1a56`, I need the nodes `2a`
+  This is a reference including the *id* of the **slice** and their position.
+  For example, it will require "For the slice `0x1a56`, I need the nodes `2a`
   and `35`, `36`", meaning that it needs the *ath child of the 2nd child* of
-  the head of this **subset** as well as the
+  the head of this **slice** as well as the
   `5th and 6th children of the 3rd child`.
 
   * The **kitsunet CRS** will locate the peers providing these nodes and send
   them to the requester.
 
-  * It won't be discarded the capacity of sending full **subsets** on demand,
+  * It won't be discarded the capacity of sending full **slices** on demand,
   to facilitate fast synchronizations.
 
 #### MVP and Beyond Features
@@ -304,8 +304,8 @@ and optimized to the use case of the Ethereum State.
 * Rudimentary Proof of Concept of description above.
 * Research
   * "*Hot Caching*" of **Bridges** and, **Hubs**
-    * This is, a *hub* receives queries of a certain **subset**. If resources
-    are available, this *hub* will start maintaining this **subset** to
+    * This is, a *hub* receives queries of a certain **slice**. If resources
+    are available, this *hub* will start maintaining this **slice** to
     increase local redundancy and availability.
   * *PubSub* features must be builtin into the **kitsunet CRS**
   * Optimizations on *Co-selector indexes* to be outside **Bridges** and living
