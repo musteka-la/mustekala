@@ -26,8 +26,8 @@ letsencrypt-nginx-proxy-companion:
     - /var/run/docker.sock:/var/run/docker.sock:ro
 
 ipfs-rendezvous-experiment:
-  image: dryajov/ipfs-rendezvous-experiment
-  build: node:9
+  build: ./signaler/.
+  container_name: webrtc-star
   restart: always
   expose:
     # This port is the one that nginx-proxy container will use to redirect calls
@@ -40,9 +40,8 @@ ipfs-rendezvous-experiment:
       soft: 20000
       hard: 40000
   environment:
-    ENV_ID: "${ENV_ID}"
-    VIRTUAL_HOST: "${ENV_ID}.kitsunet.metamask.io"
+    VIRTUAL_HOST: "${HOSTNAME}.kitsunet.metamask.io"
     VIRTUAL_PORT: "9090"
-    LETSENCRYPT_HOST: "${ENV_ID}.kitsunet.metamask.io"
+    LETSENCRYPT_HOST: "${HOSTNAME}.kitsunet.metamask.io"
     LETSENCRYPT_EMAIL: "herman.junge@consensys.net"
 
