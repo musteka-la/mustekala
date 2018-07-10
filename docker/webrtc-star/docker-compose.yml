@@ -1,0 +1,48 @@
+nginx-proxy:
+  build: ./nginx-proxy/.
+  container_name: nginx-proxy
+  restart: always
+  ports:
+    # 80 should be open to the internet for letsencrypt purposes
+    - "80:80"
+    # 443 should be open to the internet for wss
+    - "443:443"
+  volumes:
+    - /home/core/ssl-certs:/etc/nginx/certs:ro
+    - /etc/nginx/vhost.d
+    - /usr/share/nginx/html
+    - /var/run/docker.sock:/tmp/docker.sock:ro
+  environment:
+    DEFAULT_HOST: "kitsunet.metamask.io"
+
+letsencrypt-nginx-proxy-companion:
+  image: jrcs/letsencrypt-nginx-proxy-companion
+  container_name: letsencrypt-nginx-proxy-companion
+  restart: always
+  volumes_from:
+    - nginx-proxy
+  volumes:
+    - /home/core/ssl-certs:/etc/nginx/certs:rw
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+
+ipfs-rendezvous-experiment:
+  image: dryajov/ipfs-rendezvous-experiment
+  build: node:9
+  restart: always
+  expose:
+    # This port is the one that nginx-proxy container will use to redirect calls
+    # Has to be represented in the environment variable VIRTUAL_PORT below
+    - "30334"
+  ports:
+    - "9090:9090"
+  ulimits:
+    nofile:
+      soft: 20000
+      hard: 40000
+  environment:
+    ENV_ID: "${ENV_ID}"
+    VIRTUAL_HOST: "${ENV_ID}.kitsunet.metamask.io"
+    VIRTUAL_PORT: "9090"
+    LETSENCRYPT_HOST: "${ENV_ID}.kitsunet.metamask.io"
+    LETSENCRYPT_EMAIL: "herman.junge@consensys.net"
+
