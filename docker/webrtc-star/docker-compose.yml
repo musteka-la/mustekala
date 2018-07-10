@@ -32,7 +32,7 @@ ipfs-rendezvous-experiment:
   expose:
     # This port is the one that nginx-proxy container will use to redirect calls
     # Has to be represented in the environment variable VIRTUAL_PORT below
-    - "30334"
+    - "9090"
   ports:
     - "9090:9090"
   ulimits:
