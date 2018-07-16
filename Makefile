@@ -15,11 +15,11 @@ custom-psql-image:
 run-psql:
 	docker run \
 		-ti --rm \
-		--net=host \
+		-p 5432:5432 \
 		--name psql \
 		-e POSTGRES_PASSWORD=mysecretpassword \
 		-v ${PWD}/services/bentobox:/workdir \
 		-v ${HOME}/.psql:/var/lib/postgresql/data \
-		mustekala-psql
+		postgres
 clean:
 	rm -rf build/bin/*
