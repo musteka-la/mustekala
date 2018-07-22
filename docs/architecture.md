@@ -100,7 +100,7 @@ hundred of such calls.
 
 #### What is this?
 
-The obtained data must be make available to **libp2p**, we use a combination of
+The obtained data must be make available to **libp2p**. We use a combination of
 IPFS, with the ability to link ethereum hashes in-protocol with IPLD.
 
 #### What do we know so far?
@@ -130,7 +130,7 @@ IPFS, with the ability to link ethereum hashes in-protocol with IPLD.
 
 #### Beyond MVP
 
-* Implement ipfs-cluster as **Bridge**
+* Implement ipfs-cluster as a **Bridge**
 * Scalable, clusterizable database (SQL DBMS) as IPFS datastore
 * Efficient *pub/sub* system to notify on new blocks
   * And indexing of **slices** of the state (see **layer 4**)
