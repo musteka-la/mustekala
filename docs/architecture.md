@@ -12,24 +12,24 @@ Consists in 4 layers:
 #### What is this?
 
 The data of the Ethereum blockchain is copied (one or another way)
-in their peers. As these peers synchronize, the state trie, accounts and smart
+into their peers. As these peers synchronize, the state trie, accounts and smart
 contracts update. Also, the clients keep copies of block headers, transactions,
 transaction receipts and some useful indexes.
 
 This layer comprises all the processes incurred to take the ethereum data, and
-pass it into the following layer of IPFS bridges and hubs.
+pass it upstream to the following layer of IPFS bridges and hubs.
 
 #### What do we know so far?
 
 Obtaining this data is not a straightforward process. The main implementations,
-namely, go-ethereum and parity use single-threaded databases for optimum
-performance: levelDB and RocksDB respectively.
+namely, _go-ethereum_ and _parity_ use single-threaded access databases for
+optimum performance: _levelDB_ and _RocksDB_ respectively.
 
 The current state of the art (as of 2018.06.08) allows to obtain the needed
 data in two ways:
 
 * By having a client discovering the peers of the network, connecting to them,
-and running the **devp2p** protocols *eth/62* and *eth/63* (aka "fast") and
+running the **devp2p** protocols *eth/62* and *eth/63* (aka "fast") and
 asking for the data needed. While this is the _de-facto_ process, it has been
 observed with a very low rate of success, both finding what we can call
 "good nodes" as the velocity of perform the actual synchronization.
@@ -43,16 +43,16 @@ the casual user to maintain.
 a number of caveats, namely, the chance of finding a synchronized one willing
 to accept this light client connection.
 
-  * Also. As the synchronization process consist on processing the transactions
-indicated on each block, in order to be able to update the stored stated, the
+  * Also, as the synchronization process consists on processing the transactions
+indicated on each block; In order to be able to update the stored stated, the
 user finds herself constantly with a high usage of resources. Making this
 process expensive for consumer grade devices.
 
 * The option, so far, is to rely on third party services, offering an RPC
 gateway to their synchronized nodes. Besides the situation of centralization
 it is desided to avoid, we find that the offered RPC methods only restricts to
-a subset of the data. i.e. You can't just ask for a complete traversal of the
-state trie at the second children of the block B.
+a subset of the data. i.e. You can't, for example, just ask for a complete
+traversal of the state trie at the second children of the block B.
 
 * Leaving aside for a moment the concrete issue of having the ability and
 availability of certain subset of data or another from any point of the network
@@ -195,8 +195,9 @@ architecture.
 
 * Sending: This is the ability to deliver requested data to other peers, such
   as, the latest block header (*pubsub*), ethereum state (*layer 4*) and
-  co-selector indexes. The ability to perform this feature represents of the
-  departure of light clients as mere consumers of information from hubs.
+  co-selector indexes. The ability to perform this feature represents the
+  departure of light clients from being mere consumers of information to
+  become hubs of data.
 
 #### MVP Features
 
