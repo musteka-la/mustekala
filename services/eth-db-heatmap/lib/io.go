@@ -134,6 +134,8 @@ func (sp *SliceProcessor) querySliceData(path string) *SliceData {
 	response.stats["is-final"] = sliceMetadata.Final
 	response.stats["max-depth"] = sliceMetadata.MaxDepth
 
+	f.Close()
+
 	return response
 }
 
