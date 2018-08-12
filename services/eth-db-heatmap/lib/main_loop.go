@@ -19,7 +19,7 @@ func (sp *SliceProcessor) SliceTheTrie() {
 	// we won't do R-04 as it is currently 69,905 uniformily
 	// distributed branches
 
-	for i := 0x0000; i < 0xffff; i++ {
+	for i := 0x0000; i < 0x10000; i++ {
 		path := fmt.Sprintf("%04x", i)
 
 		// query the DB for this slice's file (keys and metadata)

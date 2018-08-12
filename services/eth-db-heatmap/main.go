@@ -50,7 +50,7 @@ func main() {
 	// we compute the heatmap here
 	// output goes to the /tmp directory as well.
 	// you should be able to parse it with little work into a nice graph
-	sliceProcessor.GetHeatMap()
+	sliceProcessor.GetHeatMap("txt")
 
 	// done
 	log.Println("we are done here [END]")

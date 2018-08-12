@@ -76,7 +76,7 @@ func (sp *SliceProcessor) storeSliceMetadata(path string, sliceData *SliceData) 
 		TotalLeaves:         sliceData.stats["state-leaves"],
 		TotalSmartContracts: sliceData.stats["smart-contracts"],
 		BytesStem:           sliceData.stats["bytes-stem"],
-		BytesState:          sliceData.stats["bytes-state"],
+		BytesState:          sliceData.stats["bytes-slice"],
 		BytesStorage:        sliceData.stats["bytes-storage"],
 		Final:               sliceData.stats["is-final"],
 		MaxDepth:            sliceData.stats["max-depth"],
@@ -129,7 +129,7 @@ func (sp *SliceProcessor) querySliceData(path string) *SliceData {
 	response.stats["state-leaves"] = sliceMetadata.TotalLeaves
 	response.stats["smart-contracts"] = sliceMetadata.TotalSmartContracts
 	response.stats["bytes-stem"] = sliceMetadata.BytesStem
-	response.stats["bytes-state"] = sliceMetadata.BytesState
+	response.stats["bytes-slice"] = sliceMetadata.BytesState
 	response.stats["bytes-storage"] = sliceMetadata.BytesStorage
 	response.stats["is-final"] = sliceMetadata.Final
 	response.stats["max-depth"] = sliceMetadata.MaxDepth
@@ -141,7 +141,52 @@ func (sp *SliceProcessor) querySliceData(path string) *SliceData {
 
 // GetHeatMap just takes the stored data and agregates it
 // into a json file, for visualization purposes
-func (sp *SliceProcessor) GetHeatMap() {
-	// TODO
-	// implement
+func (sp *SliceProcessor) GetHeatMap(mode string) {
+	if mode != "txt" {
+		// more modes in the future
+		return
+	}
+
+	log.Printf("generating heatmap data in mode %s", mode)
+
+	// open the file or create it
+	f, err := os.OpenFile(
+		filepath.Join(sp.fileDir, "heatmap-data.txt"),
+		os.O_CREATE|os.O_APPEND|os.O_WRONLY,
+		0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for i := 0x0000; i < 0x10000; i++ {
+		path := fmt.Sprintf("%04x", i)
+
+		// query the DB for this slice's file (keys and metadata)
+		sliceData := sp.querySliceData(path)
+		if sliceData == nil {
+			log.Printf("can't find data for path %s. Run the slicer again")
+			break
+		}
+
+		// append the data into the file
+		line := fmt.Sprintf("%s %s%s %s %s %s %s %s %s\n",
+			sliceData.id[:4],
+			sliceData.stats["is-final"],
+			sliceData.stats["max-depth"],
+			sliceData.stats["state-total-nodes"],
+			sliceData.stats["state-leaves"],
+			sliceData.stats["smart-contracts"],
+			sliceData.stats["smart-contract-trie-nodes"],
+			sliceData.stats["bytes-slice"],
+			sliceData.stats["bytes-storage"],
+		)
+
+		if _, err := f.Write([]byte(line)); err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	if err := f.Close(); err != nil {
+		log.Fatal(err)
+	}
 }
