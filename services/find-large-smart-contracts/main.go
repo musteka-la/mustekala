@@ -12,7 +12,7 @@ import (
 	"github.com/metamask/mustekala/services/find-large-smart-contracts/lib"
 )
 
-var NUMBER_OF_NODES = 10000
+var NUMBER_OF_NODES = 95000
 
 func main() {
 	var (
@@ -52,14 +52,14 @@ func main() {
 
 	list := getSliceList()
 	for _, path := range list {
-		log.Printf("peeking on slice %s", path)
+		log.Printf("\t%s", path)
 
 		sliceHead := sliceHeadToKeyBytes(path)
 		it := trie.NewSliceIterator(tr, sliceHead)
 		addresses := it.GetAddressSmartContractOverSize(NUMBER_OF_NODES)
 
 		for _, add := range addresses {
-			log.Printf("\tfound %x", add)
+			log.Printf("\t\t%x", add)
 		}
 	}
 
