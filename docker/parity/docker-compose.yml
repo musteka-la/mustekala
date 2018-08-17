@@ -25,19 +25,3 @@ services:
       # Use this to log everything
       # -laccount_bloom,basicauthority,chain,client,dapps,discovery,diskmap,enact,engine,estimate_gas,ethash,executive,ext,external_tx,externalities,fatdb,fetch,hypervisor,ipc,jdb,journaldb,les,les_provider,local_store,migration,miner,mode,network,on_demand,own_tx,perf,poa,rcdb,shutdown,signer,snapshot,snapshot_io,snapshot_watcher,spec,state,stats,stratum,sync,trie,txqueue,updater=trace
     command: "--no-ancient-blocks --no-serve-light --max-peers 250 --snapshot-peers 50 --min-peers 50 --mode active --tracing off --pruning fast --db-compaction ssd --cache-size 4096 --datadir /parity-data --cache 8192 --ipfs-api --ipfs-api-port 5001 --ipfs-api-hosts all --ipfs-api-interface 0.0.0.0 --jsonrpc-apis=all --jsonrpc-interface=0.0.0.0"
-
-  geth:
-    image: golang:1.10.3
-    container_name: mustekala-geth
-    restart: always
-    ports:
-      # JSON RPC Port
-      # Note the 8546 -> 8545
-      - "8546:8545"
-      # 30303 is the RLPx port, should be open to the internet
-      - "30304:30304"
-    volumes:
-      - /home/core/mustekala-geth:/go/src/github.com/metamask/go-ethereum
-      - /home/core/geth-data/:/geth-data
-    entrypoint: /go/src/github.com/metamask/go-ethereum/build/bin/geth
-    command: "--datadir /geth-data --maxpeers 250 --port 30304 --cache 4096 --cache.database 1024 --trie-cache-gens 1024 --rpc --rpcapi eth,debug --rpcaddr 0.0.0.0"
