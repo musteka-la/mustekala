@@ -40,4 +40,4 @@ services:
       - /home/core/mustekala-geth:/go/src/github.com/metamask/go-ethereum
       - /home/core/geth-data/:/geth-data
     entrypoint: /go/src/github.com/metamask/go-ethereum/build/bin/geth
-    command: "--datadir /geth-data --maxpeers 250 --port 30304 --cache 4096 --cache.database 1024 --trie-cache-gens 1024 --rpc --rpcapi eth,debug"
+    command: "--datadir /geth-data --maxpeers 250 --port 30304 --cache 4096 --cache.database 1024 --trie-cache-gens 1024 --rpc --rpcapi eth,debug --rpcaddr 0.0.0.0"
