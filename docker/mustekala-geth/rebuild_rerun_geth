@@ -10,7 +10,7 @@ CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ##   mkdir -p /home/core/mustekala-geth
 ##   git clone https://github.com/MetaMask/go-ethereum.git /home/core/mustekala-geth
 cd /home/core/mustekala-geth
-git checkout feat/getLevelDbKey
+git checkout wip/slicer
 git pull
 
 ## Go back

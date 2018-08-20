@@ -1,0 +1,865 @@
+diff --git a/cmd/geth/config.go b/cmd/geth/config.go
+index e6bd4d5be..a34f4aacd 100644
+--- a/cmd/geth/config.go
++++ b/cmd/geth/config.go
+@@ -171,10 +171,6 @@ func makeFullNode(ctx *cli.Context) *node.Node {
+ 		utils.RegisterShhService(stack, &cfg.Shh)
+ 	}
+ 
+-	// Add the Ethereum Stats daemon if requested.
+-	if cfg.Ethstats.URL != "" {
+-		utils.RegisterEthStatsService(stack, cfg.Ethstats.URL)
+-	}
+ 	return stack
+ }
+ 
+diff --git a/cmd/utils/flags.go b/cmd/utils/flags.go
+index e3a8cc2ea..ce89ec802 100644
+--- a/cmd/utils/flags.go
++++ b/cmd/utils/flags.go
+@@ -44,8 +44,6 @@ import (
+ 	"github.com/ethereum/go-ethereum/eth/downloader"
+ 	"github.com/ethereum/go-ethereum/eth/gasprice"
+ 	"github.com/ethereum/go-ethereum/ethdb"
+-	"github.com/ethereum/go-ethereum/ethstats"
+-	"github.com/ethereum/go-ethereum/les"
+ 	"github.com/ethereum/go-ethereum/log"
+ 	"github.com/ethereum/go-ethereum/metrics"
+ 	"github.com/ethereum/go-ethereum/metrics/influxdb"
+@@ -57,7 +55,7 @@ import (
+ 	"github.com/ethereum/go-ethereum/p2p/netutil"
+ 	"github.com/ethereum/go-ethereum/params"
+ 	whisper "github.com/ethereum/go-ethereum/whisper/whisperv6"
+-	"gopkg.in/urfave/cli.v1"
++	cli "gopkg.in/urfave/cli.v1"
+ )
+ 
+ var (
+@@ -1195,20 +1193,12 @@ func SetDashboardConfig(ctx *cli.Context, cfg *dashboard.Config) {
+ // RegisterEthService adds an Ethereum client to the stack.
+ func RegisterEthService(stack *node.Node, cfg *eth.Config) {
+ 	var err error
+-	if cfg.SyncMode == downloader.LightSync {
+-		err = stack.Register(func(ctx *node.ServiceContext) (node.Service, error) {
+-			return les.New(ctx, cfg)
+-		})
+-	} else {
+-		err = stack.Register(func(ctx *node.ServiceContext) (node.Service, error) {
+-			fullNode, err := eth.New(ctx, cfg)
+-			if fullNode != nil && cfg.LightServ > 0 {
+-				ls, _ := les.NewLesServer(fullNode, cfg)
+-				fullNode.AddLesServer(ls)
+-			}
+-			return fullNode, err
+-		})
+-	}
++
++	err = stack.Register(func(ctx *node.ServiceContext) (node.Service, error) {
++		fullNode, err := eth.New(ctx, cfg)
++		return fullNode, err
++	})
++
+ 	if err != nil {
+ 		Fatalf("Failed to register the Ethereum service: %v", err)
+ 	}
+@@ -1230,23 +1220,6 @@ func RegisterShhService(stack *node.Node, cfg *whisper.Config) {
+ 	}
+ }
+ 
+-// RegisterEthStatsService configures the Ethereum Stats daemon and adds it to
+-// the given node.
+-func RegisterEthStatsService(stack *node.Node, url string) {
+-	if err := stack.Register(func(ctx *node.ServiceContext) (node.Service, error) {
+-		// Retrieve both eth and les services
+-		var ethServ *eth.Ethereum
+-		ctx.Service(&ethServ)
+-
+-		var lesServ *les.LightEthereum
+-		ctx.Service(&lesServ)
+-
+-		return ethstats.New(url, ethServ, lesServ)
+-	}); err != nil {
+-		Fatalf("Failed to register the Ethereum Stats service: %v", err)
+-	}
+-}
+-
+ // SetupNetwork configures the system for either the main net or some test network.
+ func SetupNetwork(ctx *cli.Context) {
+ 	// TODO(fjl): move target gas limit into config
+diff --git a/core/blockchain.go b/core/blockchain.go
+index 0461da7fd..d3f3c4463 100644
+--- a/core/blockchain.go
++++ b/core/blockchain.go
+@@ -291,6 +291,7 @@ func (bc *BlockChain) SetHead(head uint64) error {
+ 			bc.currentBlock.Store(bc.genesisBlock)
+ 		}
+ 	}
++
+ 	// Rewind the fast block in a simpleton way to the target head
+ 	if currentFastBlock := bc.CurrentFastBlock(); currentFastBlock != nil && currentHeader.Number.Uint64() < currentFastBlock.NumberU64() {
+ 		bc.currentFastBlock.Store(bc.GetBlock(currentHeader.Hash(), currentHeader.Number.Uint64()))
+@@ -386,6 +387,10 @@ func (bc *BlockChain) StateAt(root common.Hash) (*state.StateDB, error) {
+ 	return state.New(root, bc.stateCache)
+ }
+ 
++func (bc *BlockChain) GetCacheTrie(root common.Hash) (state.Trie, error) {
++	return bc.stateCache.OpenTrie(root)
++}
++
+ // Reset purges the entire blockchain, restoring it to its genesis state.
+ func (bc *BlockChain) Reset() error {
+ 	return bc.ResetWithGenesisBlock(bc.genesisBlock)
+diff --git a/core/state/database.go b/core/state/database.go
+index c1b630991..036f6eed9 100644
+--- a/core/state/database.go
++++ b/core/state/database.go
+@@ -67,6 +67,7 @@ type Trie interface {
+ 	Commit(onleaf trie.LeafCallback) (common.Hash, error)
+ 	Hash() common.Hash
+ 	NodeIterator(startKey []byte) trie.NodeIterator
++	NewSliceIterator(startKey []byte) *trie.SliceIterator
+ 	GetKey([]byte) []byte // TODO(fjl): remove this when SecureTrie is removed
+ 	Prove(key []byte, fromLevel uint, proofDb ethdb.Putter) error
+ }
+diff --git a/eth/api_backend.go b/eth/api_backend.go
+index 03f6012d7..6abebb50b 100644
+--- a/eth/api_backend.go
++++ b/eth/api_backend.go
+@@ -98,10 +98,16 @@ func (b *EthAPIBackend) StateAndHeaderByNumber(ctx context.Context, blockNr rpc.
+ 	if header == nil || err != nil {
+ 		return nil, nil, err
+ 	}
++
+ 	stateDb, err := b.eth.BlockChain().StateAt(header.Root)
+ 	return stateDb, header, err
+ }
+ 
++func (b *EthAPIBackend) StateByRoot(ctx context.Context, root common.Hash) (state.Trie, error) {
++	t, err := b.eth.BlockChain().GetCacheTrie(root)
++	return t, err
++}
++
+ func (b *EthAPIBackend) GetBlock(ctx context.Context, hash common.Hash) (*types.Block, error) {
+ 	return b.eth.blockchain.GetBlockByHash(hash), nil
+ }
+
+diff --git a/internal/ethapi/backend.go b/internal/ethapi/backend.go
+index c9ffe230c..6599b6b54 100644
+--- a/internal/ethapi/backend.go
++++ b/internal/ethapi/backend.go
+@@ -50,6 +50,7 @@ type Backend interface {
+ 	HeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.Header, error)
+ 	BlockByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.Block, error)
+ 	StateAndHeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*state.StateDB, *types.Header, error)
++	StateByRoot(ctx context.Context, root common.Hash) (state.Trie, error)
+ 	GetBlock(ctx context.Context, blockHash common.Hash) (*types.Block, error)
+ 	GetReceipts(ctx context.Context, blockHash common.Hash) (types.Receipts, error)
+ 	GetTd(blockHash common.Hash) *big.Int
+diff --git a/internal/ethapi/large-smart-contracts.go b/internal/ethapi/large-smart-contracts.go
+new file mode 100644
+index 000000000..2be5e58e8
+--- /dev/null
++++ b/internal/ethapi/large-smart-contracts.go
+@@ -0,0 +1,202 @@
++package ethapi
++
++// TODO
++// Eventually we will have a dynamic way to maintain this list.
++// Let's go step by step.
++var largeSmartContractPaths = []string{
++	"0042a5b6e94bc27cb9e7ad1bd73d04fa421859a99e91cbbb20ce1125ab807326",
++	"008f65c0328f9c3c40b8dbb580f0cfbbdb411eed0e59ce318ef54d7105483efb",
++	"017e54e2aea14c20073a4209f528802a5e01989be8dc0cbf78824e4eb59464a4",
++	"029bb13a6aac11fb503e5633b05cbf0a7672c2135e4f963236c53b9ceeb1cca5",
++	"0469805716fa1ea44f5aad6430d0de38ebb31a1fe334b9162fba12698fe011c8",
++	"0977ba947bbca6127f1e26ae57427c5b3399890709026ef445057d8717f0471f",
++	"0981bb62d3a453ecb3d0546d74a8f65f903cd08d6145f1b5f20de62b39f41c1b",
++	"0a2f1a262b6f13456e46f2118126429808b089ec4a707f915f10a33e94987b1a",
++	"0aca7d49d29426f9795109a25d0ff31f1b6dec1be8d1b2f5e01b9572b29d6a27",
++	"0b46c154a55604d787b7c43a15ed3bc82b287ea8b6269ef585dfe585b37e5069",
++	"0c92cd1c766969c40af4d70969aa1d6ec31baf3fb4fa99da7bfdf8faf33b5779",
++	"0dc6840d3014a61a4de5fa48f87672539d42e0b70c32dbff933fbd6a8de3d269",
++	"0e18a0168d2633e61f6860588c252ffc7e7bda9ec441a0a348c2e807b2a0953b",
++	"0e9ac608f8e9fbb4053d67077141f84daabbb017b99c5e51e76e92984e9a808b",
++	"1019a15da38888fda9242a7727071355ee41707676d1a44850be41cfcf0c370e",
++	"1023df622b97190113f86a0c7c3e399c801f461f95ec6f7555e1936b37de0bf0",
++	"10abca6c9d67721338b28a8258cc52ac63cf4d1584f03750846dd91fb151b0be",
++	"1147e10f9502e950a135d48843738d064121404f05ca7e008db168b620431c05",
++	"11ac884916022de1bf17f544317743ee008f571acc03c55e92e049896589210a",
++	"1221bbf1a467f3f007212c0739952ee0362a0fdb6726af1be41760cb8ef85cbf",
++	"134040f43f606759354c6c80b62503f8f028ee56622ef99d751373c79888a4f8",
++	"135c59da4587321ee99a44bfe90af703a1726ca1b4d19f9b3f38cef66586fca2",
++	"150463cd1d5944d930b5891f997a1966b7892df4530aae368f3b0326a1f5a385",
++	"17acacadda13ba602f4b10725dd18c180c96226e202fca7d1ddeaa774ac5e406",
++	"18b537ba256a8cc626bdec855a2fc1a54b55053cc21cc91eca51b9fb171ba025",
++	"19264e46caa28bfb4cdd0cf6c85cf537838eedea504d20b23436deaa9d1ef634",
++	"19b9db2ff4212658fab7514ab01b83b8548edd56d6c007a9fefa36af410e5698",
++	"1a4fa162e70315921486693f1d5943b7704232081b39206774caa567d63f633f",
++	"1ad835ddf35c24036e1cc313e32da923979a82f6cb904b88a0bbb110b66cda17",
++	"1b6aa1d4ada623b9eb747f16548cd27f280a73f495d64b11cbb9b1b55055bfb2",
++	"1c54b1630125d1073191a477cf8dc40db2e458e4eaa2d00618eadfd162c0d8db",
++	"1ca55a035c231e5a93ba5ce4c2e17faf933fe188a6ef8b149d1cef00f44b8a62",
++	"1ce90d8a5511af5d1595ea82ff55dc3687155fa88b804e091454e3c1f9082e8a",
++	"1e3ee3d25c3a949c0e20fcfa299a7a676a60acfb2d89f60b6928b311f4bd9cab",
++	"20d4aef183124c3e96ea7a5e657907cb5da36c7618c5f052aa02c0ce33ff72aa",
++	"23f91c2d8ea27e7e26fd422500b26991b8a41bdaed2aae0a1902bd3403e8a342",
++	"248540d598a9ff2c95e811f0b2be2635aa32705786014d562204ac4c8f0c4004",
++	"28b508df0658771143239123eb11bd9998f9c180c08b0d492d84fa2a28a67ff6",
++	"28b63abfa1f1b72c44bbfd1d6c47ada03a2decf1a9b191fca8f8149f31423493",
++	"2982d0b2f729f9cecf132f1fcc3bc8c455835db224064163a2f16099768aad5b",
++	"2a61fd36a211f4ee9339af272915caaf2427be3368fbf8caf4e5e071013cb956",
++	"2b1bbfa1ef0e576fc4da5549d99ac03da5214439f8d623043e96046fa6772f87",
++	"2b2c851ba7934eac566fa29f7220deaee0d09189e028423fa42e4958d0ed7d3e",
++	"2cc0e1d1aebf73e16e518018aa0218eae37440815e00c0f1feaefd6867ea877d",
++	"2d1488e70f5b2cd962d47b1efd592c98872336b1255cb0bf5865a10311936d1e",
++	"2f3fa0d8fd5e1e08fe0c2ebceb651a347970433f4ddca7126a9987137e45ef19",
++	"2fddc701fa0d73bdd65d125bb2af2a06f3881971a1841dcb8ef1b0712f0334cf",
++	"301da43dc990f94e546ff769829cc4353407e08f68c697bd6b01bd50cf4255c6",
++	"314b7fd2c2d7cb7ac332db55be9d7c55878f080fdffc53a83925e0e13e2555fa",
++	"315ea62ece9991b181ae5d08ec47efac582d36c7fc48d3b831ea81c3e86fe023",
++	"31a8f7e8527c487fe065ee2becd50a97db5ea446a527cbf7cbe53d6856e0475f",
++	"34a4f61c2da1bb6d9576e1abdd23212dad993dab6d890b8638eabb802aee3fc2",
++	"35b15950dbeae988eaacc7cf1f6ce1971bcc91aa2d7ce5f4f4c87561881bba9e",
++	"35c8a2bf71ecf894e1f48e5148c6afc6530fbed5b697119aa8d5e147ab70a452",
++	"35f4bbf0904dc22e72d1ee642a61c41e5b9b7b81390e0d5c341729a4381eb835",
++	"37500f315f2da965a5697c88ffa264269d66d1cf398aaa205fdec66b120f9fd6",
++	"39554d05ccbf5e165352b27f8746e0a3e0a658d6a1a0166321e94a261a8c1f96",
++	"3c82350129d6d44634c26172e76699924013030cbb150f21e3403d4e5feb2935",
++	"3ec62e8d64a4b52dd0a061b05b6709714c0bacf1f353482904b335998158c5f6",
++	"3fee5ef1208145bb46247aac73d84c8d29a2b8b0dbba619ac32cb650bbb54918",
++	"467a2c8bbda6d7b5a8ed8e5c95c0c80c89859113b4a1bc234847eda08bb19d40",
++	"474a0222bebbaf0876d7066355cc6ae56ad1cbc1ec11a50a504d4348452d34bd",
++	"47c21aaccf7858a0bbed6eb11df8b02b87bb4281c9b605ca5302417556015435",
++	"49e1d89b897802ab376b51d23d94470c37277b772dbf62755f393610bae82ad9",
++	"4b31030276f6d12e7a104dc50ecdd0d1b219322cdbd120a86d39a0307fcfe753",
++	"4bb4af7f706148111438e72582c31c69ef6d888d040043b0506049537760fba3",
++	"4dda64763302bbb47b038218adc5eac250c8e2791011fd51ab8e135c62443d67",
++	"4de7fb828c676e53d526243ad6a68d0e11d9937f793946dcb73bbf972cbdf407",
++	"4f934f4924748b840123da581ec199f95c5ecbbb019556043381352dd9b779fb",
++	"4ffa622476dd15d4e2d2154c62b80d469ddd470443d165a4f103e7c26a4525c0",
++	"500b3daa741e1dc99ad8ca443d039799a5052a4e732eecffc869f803f85e0507",
++	"525e879e52aa2d25c675136cedca69f63012033daf08c9e6c53d7f72a842dfbc",
++	"55d0dcda02b6824f3f8e96a2b08e6fed79be901ec3830ef0c8f901684b3c9f07",
++	"5683010a56bc7ac36840751b2c1b25a9100b1d3ac4ee72d4c809823338c06d34",
++	"56f389b8615659464055b979237c53d9c8c352be1eb90067f4cbeb91d08c7924",
++	"5796491f339259bbdbab3f5b7f8b6a296ba972f495089be1ff4f22757863b0a1",
++	"59c66e23661e9c2a32dbf3283de0116b0dc8923151112a6f6f7ee4f36dbfeb6c",
++	"5a58765308dfedf550ec1f134e333020fbed8a525308aa951e6b3e497533c60f",
++	"5a6712a497afa6ede4acfaf3d895f2f7157a9fd51dac61eb93fcdf85ed9a59a7",
++	"5d1760cd7b98df3b2e40d0661467b15b1316faae44846e7185a4a409c237b53a",
++	"5ee88384a4d6a50ca315ab1afe8fe53b42606ac45b85f21c319cee616f097f57",
++	"6261b57e5aa097d1303413572601b071344c9eaaa6959867843fdc5fa91fbaa7",
++	"63624fc26e1a54c44418f7e6bfdbf02f56ccc9c2e4e62b209b4d1fbb9195ba7a",
++	"63b2be8bd61b9e29b73a4504c9a09d4d2c01f15a7e0d8fb0771ea2ed3f7124f6",
++	"649102abc35528ef45c3afd820f67dcf916c31e43eb2b61fd33a6846e4102f38",
++	"66f2baeb13c2a5561421da3dfc40058c2bfa1c5c72641dcb6397d212f72619bc",
++	"69c9a0b7b30e994ed22fa5a2fe3596695173d7f1e5bec1b0938d0ee076d37d0a",
++	"6a603bfdb45b5bb56ba31acce2f5de65eff1d5728ef783fe9c5e5b5960f88ae5",
++	"6b26df514ddc1df65196a38e302f94cb2245cafd54f59f25265c7b1130e3a1e6",
++	"6bfb4319335810c7101e2aca65f011a8607e3f4a738d03ceb1b832a541434214",
++	"6d33b51453e7e671393f09cf70c6be268336048970b5f58f46581c6d0db9ba81",
++	"6dd8c24c6e0a722f96a35a18537ae9df6d0dd0c5f149758156119b36f26f2cd3",
++	"6f0f9de0ea929291fb70f48c61082c4b6e2e7fa6808ec2dde6f4ce94a2e9d19f",
++	"6f1752d94eb680158ae3b8e38854b83b92295905959fc3f7e9ac70bf177a51f3",
++	"71ecf67f5807d0cbf0b18d88af1300f883a13d8ddb598e60d7c93b988afeea33",
++	"71fe2579f4a5be157546549260f5539cc9445fa20674a8bb637049f43fc1eac2",
++	"7295a160b68b866e93d36693339afd775bea319b71609a03617d1202f028b1cc",
++	"72e28e74c10e5cdfe92ca38bff0455d185f47051eff4f7853dc5bdc8629fb563",
++	"74f839051131d498ba780227eca7e22a8fe84f1a93462a599cb69207086e52e4",
++	"76bd4ee82cca2002d0195a3b492031111a247fd11dd4be7ffced44d0a81a7287",
++	"77c44fff1e18a36ea978316e642b50d6f9c32143c3b58607eff6c946d6c29c03",
++	"781aa989c89d46f0dec1dd789351474427a7856c06acaaa10a64be0c1df9a6da",
++	"78ed92cc83b6c500331f7312e6fd5a95ced6939ad754d9b4535a766540e0995e",
++	"7a8e7973dca843a066e91a8ddbfe0a16fecaa2567deee271f810bc7e7fb726ff",
++	"7bc0bed588716b359e5fff1a555634814e911e6a3326b1059878461f153c364a",
++	"7c20ff05c342e68f27b8974a67cf4e536444847ba90c53381aee9ecd72aa77bd",
++	"7c876c04f9c27850c1b0edda03801425c0746d7e24f5b55494a94d0bf3a0231c",
++	"819543bc861b2f9393698b8d0d69f292670b87fa11778044f6f8b0d9d2cc60ef",
++	"82225715335f0e3e0a2d1f7f5cb4b66b261568822c199c41bd8603402c917a6a",
++	"84086d61d6099e3e8ec2d293d454997577d5fe41a219c08ff8b9473767da2999",
++	"8495cdd592c3c5d4e6ce44e92176b4b47c154d612c51ca7987998a6ffcd283da",
++	"881d85ad6866e595be410757cf5bcaab32add7d94a3762e356ae589c3b4e9eda",
++	"89430c20d216fda40951ddca24478bb2cce18fb6b7ae14a9bcfa21b2702d3481",
++	"8b0da68a797193aee24284d21208fe1ba932623129405e6754d1e1c5c2493fd9",
++	"8b67af89558d7afd01b018404dda82bb30345e0efcff81daa185698521a31446",
++	"8c1f60bbd8779a1b3f80fdc070caae36129ec4aed588466244de3f9d5624c838",
++	"8cc696707e0b5913d1981b50a838e0416622e81541083973bbd4bd4ee7edfb14",
++	"8e6dc2a972c41f46a30de7effcff327c6efa63ef4dff28ea2baa1efbee680c66",
++	"8e96dfc4c331e02f78e5112a37bc71047c81509e9666065e21d0d2d1b8dc4ebd",
++	"90e8c73bb877861240dfe5c6836c3870f324b0f5250336d8bd95b0ded0817648",
++	"91f7d922da6e370838413c6c8635621cbe4764974b0486d1a78fb5985a48216f",
++	"93249820e66d13c26cd95a5e9bde45186fe9f8878b9122bde4e8e5bc38165292",
++	"9332847111fa3195f57f9f5893527af9b91bf36a72d719af3bd61562ff3ef901",
++	"93f37d58cf87ec06994a7095fddb38780e4da07b7cc978d6610431854c69e723",
++	"9409160bc4922120a08054b27d1ea9f6ef7b0e701dffac7c5186dc40e991232a",
++	"987e680061b4b8e3a21ff8ba9ca0cc8f003df42d8c91119fffc1e1e0137071a0",
++	"99f024a8c7f131cdab535e5bffa857b475c71173ca276f4f4a8f060e6681589c",
++	"9b5af45de1ea7a75b5a9ee0b37ad24f706efaeb0150b3c35037925daa6b659c5",
++	"9b86779c190b6da9c2745fe4227f6062ef04019ba52ba52c1b9e3904d7787208",
++	"9e117262ca56a8d183a299b34dcdc6d3c2115361f40acc9b5ceecb021444efd3",
++	"9f13f88230a70de90ed5fa41ba35a5fb78bc55d11cc9406f17d314fb67047ac7",
++	"a1486b0fc3c86a58bd40a67ffef6f0a8ce3c0cd8c9c695535ac5815cfb4a4ef7",
++	"a21db698f401edfec6b82909b63079bdb18b1792294fecc455ee498bf7e071f2",
++	"a58e01655111bc91938a75abd4279f8c86a6cf3efc98fe75292ad0b60e10999b",
++	"a7dd7e27775590759e7a28246939d21b732f1822d815002a5e2a6e482b700def",
++	"ad0b6323d534526e4eb9ac19fd19e6ed060947bb5a8f21ae62cee97d40afcb3e",
++	"ad0d875c0af67d42bb9097debb185856c7f3a1953cc7cfd65b842820906a2e01",
++	"ad7063593d80ddb18d1ec747d7512ecf8f1ee91afdbbebd897e9d179aa9503b4",
++	"adcedabe3f5b066a91777e19185cf43fcc3519a8ecc536abf16c7f1d4d28fa18",
++	"ae087dea5584592074b2a7a0a8cd3bce0dfa50d66859552a888158f4c2f0154d",
++	"ae4b1552559888c859ada2ce5ec64ff364292226346053ff519a5aef4661d64b",
++	"ae4b41c895f6186b89dd86b9fec68d98aa382c69a717a221fd2b314fef306a09",
++	"ae66d482d24d36ce193b04f6c5b21872e16b4793621cc98f58c6733d37c80247",
++	"af7e948b9dc28d6f590ee41da469d3eaddc465d72f1e72686771f3cb8a7d4070",
++	"b1656c272fcb9817f244d1239c2214e129a52a1a56097b2e63b456df6c2c45da",
++	"b19aaaa8ff8bfb37d2b3109ebcd6762587b0beea99748ce3840cef2cb9c2e53f",
++	"b21f0b5e0a43c34472479df2d2318c4ea1624dda71d052b4a5d6dc4df041e475",
++	"b25c3d26e33cd2400e6b1f6fd119adf0dda3a00532eff77116ce64684939ce9c",
++	"b4caa115eaf3c39fa9408a03eeb17512f8724db7d9e680d4f0b3dee034f33d8e",
++	"b53eff9e06618c0508b261e8324f6ffafb41032a4adf32c43e52b4aa17f53231",
++	"b6ca8e6e079bc6b2954186a882de825882d39b1f0168a5095da677f096438ee9",
++	"b6d636f6ecb20ad13c9ab8f0f057125fda4666de4ad184d32f63af82f8138a64",
++	"b75566548d3d791e1ae56324ea9667bb97726c9cfd8c12bc573427b16a4e6ab0",
++	"b7e0321a709569eed8c7bcc40231db73d12e1d6bf3af596762562be02cfa002c",
++	"b879a5b6dd15fe807bc9b0bbd7fe43bbe9f10a273fc112dfcf8fe8a1b1747b21",
++	"b879e852bcfc95aece140db83dea5ce0b0fcbffe4870ad2a0b70c59a9c11bcd4",
++	"bd005c7ccafad8143c28f91fb359fc02c51a26aaa369996d53849b2fde647dd9",
++	"be6bd5234605682658e2ccba3824e89fbb0780c749ad853e6d3e6ed2c45f1ff7",
++	"bf5fd985a465e1ea99059d01f042b415ab24db831264b882f246eac49aedcd34",
++	"bf7cd2881f57c7cf1647d624c8a0d40bafb3918e4c2b3e9e664cd0b76c8da817",
++	"c0fea95a95e74a18f3a5d3b392b07d4b493c91312c6e50c211dcc5e14d6d9e7a",
++	"c1cd78943924e0930e65c5506b0f966b951e31bd543b78d5c3c694d0d050a82e",
++	"c216358d05b42af5cc7edcad10f1d062aef440c08a85c18cb9181df6d257c4af",
++	"c2d4ea9ccd861b06a1222660cce44688cd79e483e26115be578da0b4fb15417a",
++	"c334ad6004fec16018ee7b7c45051ce51923084d0356c597680be41fa6ef7faa",
++	"c53bdf9126e460201a44f9f5f156a036ec66c9609bb8edb817fd0013f984bd51",
++	"c662407a89ff051fbc7ecd653438b098aa9f69974cbf752c36b3d9cf19751cec",
++	"c7202c0f3b6bfc3c1cc06e647b3b5f70a85b40109ef09bc50641685ac8d5bc33",
++	"cff6e672cbe05a46dce2176ccb179635e0606f8774893d30cae7b069e564f796",
++	"d0432d5f66cbe71c38341c1f9b057682ba084fc38d8e89c6b0692dbfe3161ec8",
++	"d118d9e5e3b9203a5a99a32d5489f7082f208f7642be4ea3d914be28a24fc32a",
++	"d42480d13328b1b954994bed164c28aabf6b961026aaba68ed7ca267a7ee2285",
++	"d4436fffa2b6b4b88bec613812323d01b6da01929433abf834f2f9ca38ff896e",
++	"d4487eb4497b2db4b3b2be2d32a20ba71c6047604904049257b7ecfbed1d9214",
++	"d83656e6b88e9d59401dc85aa80b7102c19b40dd4f78a49585f748f822783f37",
++	"d8b980e4dd99dfb5bc54c927045735cd320d9a234d1da2d9f3bc9ee0d605292f",
++	"d8e8d4e35ddfe8e32c237f33e44bc4d0c03b5c092a24df90da47fc510ea7dbf6",
++	"db9a34fdd10854f7ebc1307ae7ab35cc22bbeae29a33dc351ab932fe0ecc6f54",
++	"dbed5e79fb93ecbd3c0f34798a7864f600960aa52a6e36b731f21cb1a10898c8",
++	"dd33dae17e982c6d82684ee758192c6c8f84db74c16bcc88bfe5f5ed96f46f75",
++	"dde83ae669f3e5ceca467ddf54c36c721ab25ca668ab544a121d9b40df44fed7",
++	"de1980c4398f02118d0f138f9f8ac03baf5c681964b8da1b2ca6ef9bfdb37b43",
++	"de47ec2f89a59c2f9fcfd41a055b27d92ab1aada09358ad8b7a568e593b7c0e0",
++	"deb40439f79a1b0e3476463384b3632393e9b38c8ee83e8dcabf96c196503538",
++	"df25fba38e471158e66694e3c91bf0edc7b613a427d54ac3c6ed14f256348944",
++	"df836c7c63976affc8b891f324e7ff6b88063a9e0eece2b9e73635d946918dd4",
++	"e4a8c31dffc22d63a0f1b22e922054a56acea91a1fce56146aa2a6a016e589ba",
++	"eb12d05066c5c1c28e1d97d9b60b6bcde1463e527260e22a1a6ac9f13c1026ef",
++	"ec0dab2ac18172488e647a004d6f3542e15cd6cedd2f3d36bb74de64d246a4fd",
++	"ec51c440e653b4613cbfc249fe7c54f9960b0dc1f4a84905e077721a3e0f45cf",
++	"f18438a35a63358b1712e7ac95b0773f64ff402facf0174cfb2c6ce0a5b5d5dd",
++	"f69ae663320da1aa05ba1d0e1854bdc8cb195e0869bf06f6a855f34306edaceb",
++	"f94c28793e691c200db7e2e210d71aead737c2550c7fa7b03a53dd242f5b3a87",
++	"fb054a35ea5295677f3428f76d45a72f49aadc7541bee17f9c7c14c7a7af9e46",
++	"ffeb3f627b0b7aaeaf562172de379c0096e69afbc941186601b1d937de2da2d5",
++}
+diff --git a/internal/ethapi/slice_api.go b/internal/ethapi/slice_api.go
+new file mode 100644
+index 000000000..0d86cb2e5
+--- /dev/null
++++ b/internal/ethapi/slice_api.go
+@@ -0,0 +1,172 @@
++package ethapi
++
++import (
++	"context"
++	"fmt"
++	"time"
++
++	"github.com/ethereum/go-ethereum/common"
++	"github.com/ethereum/go-ethereum/common/hexutil"
++	"github.com/syndtr/goleveldb/leveldb"
++)
++
++// GetSlice response structures
++
++type GetSliceKeysResponse struct {
++	SliceID string                      `json:"slice-id"`
++	Stem    []string                    `json:"stem"`
++	State   [][]string                  `json:"state"`
++	Metrics GetSliceKeysResponseMetrics `json:"metrics"`
++}
++
++type GetSliceKeysResponseMetrics struct {
++	Time map[string]string `json:"time (ms)"` // stem, state, storage (one by one)
++}
++
++// GetSliceKeys retrieves a slice from the state, alongside its stem.
++//
++// Parameters
++// - path 		path from root where the slice starts
++// - depth		depth to walk from the slice head
++// - stateRoot	state root of the GetSliceKeysResponse
++func (api *PublicDebugAPI) GetSliceKeys(ctx context.Context, path string, depth int, stateRoot string) (GetSliceKeysResponse, error) {
++	var timerStart int64
++
++	// check the given root
++	stateRootByte, err := hexutil.Decode(stateRoot)
++	if err != nil {
++		return GetSliceKeysResponse{},
++			fmt.Errorf("incorrect input, expected string representation of hex for root")
++	}
++
++	// check the given path
++	slicePath := pathStringToKeyBytes(path)
++	if slicePath == nil {
++		return GetSliceKeysResponse{},
++			fmt.Errorf("incorrect input, expected string representation of hex for path")
++	}
++
++	// prepare the response object
++	response := GetSliceKeysResponse{
++		SliceID: fmt.Sprintf("%s-%02d-%s", path, depth, stateRoot[2:8]),
++		Stem:    make([]string, 0),
++		State:   make([][]string, 0),
++		Metrics: GetSliceKeysResponseMetrics{
++			Time: make(map[string]string),
++		},
++	}
++
++	// load a trie with the given state root from the cache (ideally)
++	// TODO
++	// we want to have the best mechanism to either fetch the trie
++	// from the cache geth is using, or well load it and cache it.
++	timerStart = time.Now().UnixNano()
++	tr, err := api.b.StateByRoot(ctx, common.BytesToHash(stateRootByte))
++	if err != nil {
++		return GetSliceKeysResponse{}, fmt.Errorf("error loading the trie %v", err)
++	}
++	// DOC
++	// the call chain is
++	// eth/api_backend.go:StateByRoot()
++	// core/blockchain.go:GetCacheTrie()
++	// core/state/database.go:OpenTrie()
++	// (i.e. Improve the cache)
++	response.Metrics.Time["00 trie-loading"] = timeDiffToMiliseconds(time.Now().UnixNano() - timerStart)
++
++	// fetch the stem
++	timerStart = time.Now().UnixNano()
++	it := tr.NewSliceIterator(slicePath)
++	it.Next(true)
++	// the actual fetching
++	stemKeys := it.StemKeys()
++	response.Metrics.Time["01 fetch-stem-keys"] = timeDiffToMiliseconds(time.Now().UnixNano() - timerStart)
++	// fill the data into the response
++	var keyStr string
++	for _, key := range stemKeys {
++		keyStr = fmt.Sprintf("%x", key)
++		response.Stem = append(response.Stem, keyStr)
++	}
++
++	// fetch the slice
++	timerStart = time.Now().UnixNano()
++	it = tr.NewSliceIterator(slicePath)
++	stateKeys, _ := it.Slice(depth, false)
++	response.Metrics.Time["02 fetch-slice-keys"] = timeDiffToMiliseconds(time.Now().UnixNano() - timerStart)
++	// fill the data into the response
++	var keys []string
++	for _, depthLevel := range stateKeys {
++		// remember that we make a separate golang slice per depth level
++		if len(depthLevel) == 0 {
++			break
++		}
++
++		keys = make([]string, 0)
++		for _, key := range depthLevel {
++			keyStr = fmt.Sprintf("%x", key)
++			keys = append(keys, keyStr)
++		}
++		response.State = append(response.State, keys)
++	}
++
++	// fetch the smart contract storage
++	// TODO
++
++	// we are done here
++	return response, nil
++}
++
++func pathStringToKeyBytes(input string) []byte {
++	if input == "" {
++		return nil
++	}
++
++	// first we convert each character to its hex counterpart
++	output := make([]byte, 0)
++	var b byte
++	for _, c := range input {
++		switch {
++		case '0' <= c && c <= '9':
++			b = byte(c - '0')
++		case 'a' <= c && c <= 'f':
++			b = byte(c - 'a' + 10)
++		default:
++			return nil
++		}
++
++		output = append(output, b)
++	}
++
++	return output
++}
++
++func timeDiffToMiliseconds(input int64) string {
++	return fmt.Sprintf("%.6f", float64(input)/(1000*1000))
++}
++
++///////////////////////
++//
++// We will mutate this later for getTrieNodes([Hash])
++//
++///////////////////////
++
++// GetLevelDbKey retrieves the value of a key from levelDB backend
++func (api *PublicDebugAPI) GetLevelDbKey(ctx context.Context, input string) (string, error) {
++	ldb, ok := api.b.ChainDb().(interface {
++		LDB() *leveldb.DB
++	})
++	if !ok {
++		return "", fmt.Errorf("db not found!")
++	}
++
++	bb, err := hexutil.Decode(input)
++	if err != nil {
++		return "", fmt.Errorf("incorrect input, expected string representation of hex")
++	}
++
++	value, err := ldb.LDB().Get(bb, nil)
++	if err != nil {
++		return "", fmt.Errorf("error getting value from levelDB %v", err)
++	}
++
++	return fmt.Sprintf("%x", value), nil
++}
+diff --git a/internal/web3ext/web3ext.go b/internal/web3ext/web3ext.go
+index 000e3728d..6743da512 100644
+--- a/internal/web3ext/web3ext.go
++++ b/internal/web3ext/web3ext.go
+@@ -424,6 +424,11 @@ web3._extend({
+ 			params: 2,
+ 			inputFormatter:[null, null],
+ 		}),
++		new web3._extend.Method({
++			name: 'getSliceKeys',
++			call: 'debug_getSliceKeys',
++			params: 3,
++		}),
+ 	],
+ 	properties: []
+ });
+diff --git a/trie/slice_iterator.go b/trie/slice_iterator.go
+new file mode 100644
+index 000000000..10bf9fb4b
+--- /dev/null
++++ b/trie/slice_iterator.go
+@@ -0,0 +1,300 @@
++package trie
++
++import (
++	"bytes"
++	"math/big"
++
++	"github.com/ethereum/go-ethereum/common"
++	"github.com/ethereum/go-ethereum/crypto"
++	"github.com/ethereum/go-ethereum/rlp"
++)
++
++var emptyCodeHash = crypto.Keccak256(nil)
++
++// SliceIterator wraps the nodeIterator object
++// to allow the Trie Slice API
++type SliceIterator struct {
++	nodeIterator
++}
++
++// NewSliceIterator returns a SliceIterator object
++func (st *SecureTrie) NewSliceIterator(start []byte) *SliceIterator {
++	if st.trie.Hash() == emptyState {
++		return &SliceIterator{}
++	}
++	it := &SliceIterator{}
++	it.trie = &st.trie
++	it.err = it.seek(start)
++	return it
++}
++
++// Slice walks down the given depth from the starting path
++// defined at the SliceIterator construction.
++func (it *SliceIterator) Slice(maxDepth int, includeBlobs bool) ([][]common.Hash, [][][]byte) {
++	keys := make([][]common.Hash, maxDepth+1)
++	for i, _ := range keys {
++		// group nodes by their depth
++		keys[i] = make([]common.Hash, 0)
++	}
++
++	var blobs [][][]byte
++	if includeBlobs {
++		blobs = make([][][]byte, maxDepth+1)
++		for i, _ := range blobs {
++			blobs[i] = make([][]byte, 0)
++		}
++	}
++
++	// correct the max depth to the current length of the stack
++	maxDepth = maxDepth + len(it.stack)
++
++	// boundary conditions and depth variables
++	// don't worry, the code is extensively documented
++	headCheckPoint := false
++	var headDepth, currentDepth, indexDepth int
++
++	for {
++		// prevent the iterator to go deeper than the maxDepth
++		if len(it.stack) == maxDepth+1 {
++			it.pop()
++		}
++
++		// update the state of the iterator
++		it.Next(true)
++
++		// the stack (path from root to the slice head) is including the latter
++		currentDepth = len(it.stack) - 1
++
++		// set the checkpoint
++		if !headCheckPoint {
++			headDepth = currentDepth
++			headCheckPoint = true
++		} else {
++			if currentDepth <= headDepth {
++				// we are back to head level, the traversal is complete
++				// for example, we started at depth 3, we would go
++				// 000, 0001, 00012, 00013, 00021, 00022.
++				// at 001 we call it in, since we finished the traversal
++				break
++			}
++		}
++
++		// add the found key
++		indexDepth = currentDepth - headDepth
++		if (it.Hash() == common.Hash{}) {
++			// we are storing the pointer to the next one,
++			// then, if we are in a leaf we already stored it
++			continue
++		}
++
++		keys[indexDepth] = append(keys[indexDepth], it.Hash())
++		if includeBlobs {
++			blobs[indexDepth] = append(blobs[indexDepth], it.Blob(it.Hash()))
++		}
++	}
++
++	return keys, blobs
++}
++
++// StemKeys returns the keys of the stem of the slice.
++// The stem is the path from the root of the trie to the head of the slice.
++// This path is already stored in memory from the trie construction,
++// hence it should be faster to retrieve than the actual blobs.
++func (it *SliceIterator) StemKeys() []common.Hash {
++	if len(it.stack) == 0 {
++		return nil
++	}
++
++	output := make([]common.Hash, 0)
++
++	for _, item := range it.stack[:len(it.stack)-1] {
++		output = append(output, item.hash)
++	}
++
++	return output
++}
++
++// StemBlobs returns the blobs of the stem of the slice.
++// The stem is the path from the root of the trie to the head of the slice.
++func (it *SliceIterator) StemBlobs() [][]byte {
++	if len(it.stack) == 0 {
++		return nil
++	}
++
++	output := make([][]byte, 0)
++
++	for _, item := range it.stack[:len(it.stack)-1] {
++		output = append(output, it.Blob(item.hash))
++	}
++
++	return output
++}
++
++// seek is an overload of the nodeIterator.seek() function
++// to allow for odd paths
++func (it *SliceIterator) seek(prefix []byte) error {
++	// Move forward until we're just before the closest match to key.
++	for {
++		state, parentIndex, path, err := it.peek(bytes.HasPrefix(prefix, it.path))
++		if err == errIteratorEnd {
++			return errIteratorEnd
++		} else if err != nil {
++			return seekError{prefix, err}
++		} else if bytes.Compare(path, prefix) >= 0 {
++			return nil
++		}
++		it.push(state, parentIndex, path)
++	}
++}
++
++// Blob will try to get from the cache these blobs,
++// defaulting to the persistent database in case of failure.
++func (it *SliceIterator) Blob(hash common.Hash) []byte {
++	db := it.trie.db
++
++	db.lock.RLock()
++	node := db.nodes[hash]
++	db.lock.RUnlock()
++
++	if node != nil {
++		return node.rlp()
++	}
++
++	// content unavailable in memory, attempt to retrieve from disk
++	blob, err := db.diskdb.Get(hash[:])
++	if err != nil || blob == nil {
++		return nil
++	}
++
++	return blob
++}
++
++// GetAddressSmartContractOverSize returns the smart contract addresses
++// that surpass the specified number of nodes.
++func (it *SliceIterator) GetAddressSmartContractOverSize(numberOfNodes int) [][]byte {
++	output := make([][]byte, 0)
++
++	// traverse the slice
++	headCheckPoint := false
++	var headDepth, currentDepth int
++
++	for {
++		// update the state of the iterator
++		it.Next(true)
++
++		// the stack (path from root to the slice head) is including the latter
++		currentDepth = len(it.stack) - 1
++
++		// set the checkpoint
++		if !headCheckPoint {
++			headDepth = currentDepth
++			headCheckPoint = true
++		} else {
++			if currentDepth <= headDepth {
++				// we are back to head level, the traversal is complete
++				// for example, we started at depth 3, we would go
++				// 000, 0001, 00012, 00013, 00021, 00022.
++				// at 001 we call it in, since we finished the traversal
++				break
++			}
++		}
++
++		// on leaf, we identify whether is a smart contract
++		if it.Leaf() {
++			hash := it.stack[len(it.stack)-2].hash
++			path := hexToKeybytes(it.Path())
++
++			leafType, root := identifyLeafType(it.Blob(hash))
++
++			if leafType == "smart contract" {
++				if it.smartContractExceedsNumberOfNodes(root, numberOfNodes) {
++					// Find the address using the pre-image cache
++					preimage, _ := it.trie.db.preimage(common.BytesToHash(path))
++					if preimage != nil {
++						output = append(output, preimage)
++					} else {
++						// return the path if no preimage
++						output = append(output, path)
++					}
++				}
++			}
++		}
++	}
++
++	return output
++}
++
++type Account struct {
++	Nonce    uint64
++	Balance  *big.Int
++	Root     common.Hash // merkle root of the storage trie
++	CodeHash []byte
++}
++
++// identifyLeafType is a convenience method
++// if the leaf is a smart contract, it will return the storage root
++func identifyLeafType(input []byte) (string, common.Hash) {
++	var i []interface{}
++	var account Account
++
++	err := rlp.DecodeBytes(input, &i)
++	if err != nil {
++		// this is a debugging function, we want it to break
++		// the program if it's not a leaf
++		panic(err)
++	}
++
++	switch len(i) {
++	case 2:
++		first := i[0].([]byte)
++		last := i[1].([]byte)
++
++		switch first[0] / 16 {
++		case '\x00':
++			fallthrough
++		case '\x01':
++
++			panic("extension")
++		case '\x02':
++			fallthrough
++		case '\x03':
++			err = rlp.DecodeBytes(last, &account)
++			if err != nil {
++				panic(err)
++			}
++			if !bytes.Equal(account.CodeHash, emptyCodeHash) {
++				return "smart contract", account.Root
++			} else {
++				return "balance account", common.Hash{}
++			}
++		default:
++			panic("unknown hex prefix on trie node")
++		}
++
++	case 17:
++		panic("branch")
++
++	default:
++		panic("unknown trie node type")
++	}
++}
++
++func (it *SliceIterator) smartContractExceedsNumberOfNodes(storageRoot common.Hash, numberOfNodes int) bool {
++	storageNodeCount := 0
++
++	tr, err := NewSecure(storageRoot, it.trie.db, 0)
++	if err != nil {
++		panic(err)
++	}
++
++	for it := tr.NewSliceIterator(nil); it.Next(true); {
++		if !(it.Hash() == common.Hash{}) {
++			storageNodeCount++
++			if storageNodeCount > numberOfNodes {
++				return true
++			}
++		}
++	}
++
++	return false
++}

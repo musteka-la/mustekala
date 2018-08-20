@@ -2,7 +2,7 @@
 
 MetaMask Light Client Development.
 
-In one line: Ethereum on IPFS.
+In one line: Ethereum on libp2p.
 
 ### Quick Links
 

@@ -9,6 +9,12 @@ block-header-syncer:
 bentobox:
 	go build -v -o ./build/bin/bentobox ./services/bentobox/*.go
 
+eth-db-heatmap:
+	go build -v -o ./build/bin/eth-db-heatmap ./services/eth-db-heatmap/*.go
+
+find-large-smart-contracts:
+	go build -v -o ./build/bin/find-large-smart-contracts ./services/find-large-smart-contracts/*.go
+
 custom-psql-image:
 	docker build docker/custom-psql/. -t mustekala-psql
 

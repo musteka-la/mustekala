@@ -1,0 +1,22 @@
+version: '2'
+networks:
+  default:
+    external:
+      name: mustekala
+
+services:
+  mustekala-geth:
+    image: golang:1.10.3
+    container_name: mustekala-geth
+    restart: always
+    ports:
+      # JSON RPC Port
+      # Notice the 8546 -> 8545, No seriously, I wasted one hour figuring out why curl did not work the other day.
+      - "8546:8545"
+      # 30303 is the RLPx port, should be open to the internet
+      - "30304:30304"
+    volumes:
+      - /home/core/mustekala-geth:/go/src/github.com/metamask/go-ethereum
+      - /home/core/geth-data/:/geth-data
+    entrypoint: /go/src/github.com/metamask/go-ethereum/build/bin/geth
+    command: "--datadir /geth-data --maxpeers 250 --port 30304 --cache 4096 --cache.database 120 --trie-cache-gens 120 --rpc --rpcapi eth,debug --rpcaddr 0.0.0.0 --rpcvhosts=* --pprof --pprofaddr 0.0.0.0"
