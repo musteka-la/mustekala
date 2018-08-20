@@ -9,7 +9,7 @@ run npm init -y
 RUN npm install libp2p-webrtc-star
 
 # start server
-CMD npx star-signal --port=9090 --host=127.0.0.1
+CMD npx star-signal --port=9090 --host=0.0.0.0
 
 # expose server
 EXPOSE 9090
