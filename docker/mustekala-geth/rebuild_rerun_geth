@@ -17,7 +17,7 @@ git pull
 cd $CURRENT_DIR
 
 ## Rebuild geth
-docker run -ti --rm --name compile-geth \
+docker run --rm --name compile-geth \
 	-v /home/core/mustekala-geth:/go/src/github.com/metamask/go-ethereum \
 	-w /go/src/github.com/metamask/go-ethereum \
 	golang:1.10.3 \
