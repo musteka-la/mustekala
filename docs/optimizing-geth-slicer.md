@@ -24,8 +24,8 @@ https://github.com/ethereum/go-ethereum/wiki/Metrics-and-Monitoring
 
 	INFO [08-23|02:10:45.930] Imported new chain segment               blocks=1  txs=47   mgas=7.988   elapsed=278.571ms mgasps=28.674  number=6197430 hash=4d2fc5…e848dc cache=105.35mB
 
-https://github.com/ethereum/go-ethereum/blob/f34f361ca6635690f6dd81d6f3bddfff498e9fd6/core/blockchain.go#L1193
-https://github.com/ethereum/go-ethereum/blob/f34f361ca6635690f6dd81d6f3bddfff498e9fd6/trie/database.go#L731
+* https://github.com/ethereum/go-ethereum/blob/f34f361ca6635690f6dd81d6f3bddfff498e9fd6/core/blockchain.go#L1193
+* https://github.com/ethereum/go-ethereum/blob/f34f361ca6635690f6dd81d6f3bddfff498e9fd6/trie/database.go#L731
 
 ```go
 // Size returns the current storage size of the memory cache in front of the
