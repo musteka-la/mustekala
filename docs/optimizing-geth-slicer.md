@@ -42,6 +42,12 @@ func (db *Database) Size() (common.StorageSize, common.StorageSize) {
 }
 ```
 
+### Historic links
+
+#### The PR where they introduced the intermediate cache
+
+* https://github.com/ethereum/go-ethereum/pull/15857
+
 ### Cheatsheet
 
 #### geth command line option to add pprof and metrics
