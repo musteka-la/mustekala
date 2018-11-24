@@ -7,7 +7,7 @@ networks:
 services:
   # Frontend
   kitsunet-bridge:
-    image: dryajov/kitsunet
+    image: dryajov/kitsunet-bridge
     restart: always
     expose:
       # This port is the one that nginx-proxy container will use to redirect calls
