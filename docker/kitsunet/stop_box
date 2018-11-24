@@ -1,0 +1,3 @@
+#!/bin/bash
+
+/opt/bin/docker-compose stop && /opt/bin/docker-compose rm -f
