@@ -24,7 +24,7 @@ services:
         hard: 40000
     environment:
       ENV_ID: "${ENV_ID}"
-      VIRTUAL_HOST: "${ENV_ID}.kitsunet.metamask.io"
+      VIRTUAL_HOST: "${ENV_ID}.musteka.la"
       VIRTUAL_PORT: "30334"
-      LETSENCRYPT_HOST: "${ENV_ID}.kitsunet.metamask.io"
+      LETSENCRYPT_HOST: "${ENV_ID}.musteka.la"
       LETSENCRYPT_EMAIL: "herman.junge@consensys.net"
