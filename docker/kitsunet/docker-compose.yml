@@ -1,21 +1,30 @@
-kitsunet-bridge:
-  image: dryajov/kitsunet
-  restart: always
-  expose:
-    # This port is the one that nginx-proxy container will use to redirect calls
-    # Has to be represented in the environment variable VIRTUAL_PORT below
-    - "30334"
-  ports:
-    - "30333:30333"
-    - "30334:30334"
-  ulimits:
-    nofile:
-      soft: 20000
-      hard: 40000
-  environment:
-    ENV_ID: "${ENV_ID}"
-    VIRTUAL_HOST: "${ENV_ID}.kitsunet.metamask.io"
-    VIRTUAL_PORT: "30334"
-    LETSENCRYPT_HOST: "${ENV_ID}.kitsunet.metamask.io"
-    LETSENCRYPT_EMAIL: "herman.junge@consensys.net"
+version: '2'
+networks:
+  default:
+    external:
+      name: mustekala
 
+services:
+  # Frontend
+  kitsunet-bridge:
+    image: dryajov/kitsunet
+    restart: always
+    expose:
+      # This port is the one that nginx-proxy container will use to redirect calls
+      # Has to be represented in the environment variable VIRTUAL_PORT below
+      - "30334"
+    ports:
+      - "30333:30333"
+      - "30334:30334"
+    external_links:
+      - mustekala-geth
+    ulimits:
+      nofile:
+        soft: 20000
+        hard: 40000
+    environment:
+      ENV_ID: "${ENV_ID}"
+      VIRTUAL_HOST: "${ENV_ID}.kitsunet.metamask.io"
+      VIRTUAL_PORT: "30334"
+      LETSENCRYPT_HOST: "${ENV_ID}.kitsunet.metamask.io"
+      LETSENCRYPT_EMAIL: "herman.junge@consensys.net"
