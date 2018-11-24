@@ -6,6 +6,35 @@ networks:
 
 services:
   # Frontend
+  nginx-proxy:
+    build: ./nginx-proxy/.
+    container_name: nginx-proxy
+    restart: always
+    ports:
+      # 80 should be open to the internet for letsencrypt purposes
+      - "80:80"
+      # 443 should be open to the internet for wss
+      - "443:443"
+    volumes:
+      - /home/core/ssl-certs:/etc/nginx/certs:ro
+      - /etc/nginx/vhost.d
+      - /usr/share/nginx/html
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    environment:
+      DEFAULT_HOST: "musteka.la"
+
+  ## Takes care of the SSL certs
+  letsencrypt-nginx-proxy-companion:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    container_name: letsencrypt-nginx-proxy-companion
+    restart: always
+    volumes_from:
+      - nginx-proxy
+    volumes:
+      - /home/core/ssl-certs:/etc/nginx/certs:rw
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  ## The actual application that interests us
   kitsunet-bridge:
     image: dryajov/kitsunet-bridge
     restart: always
@@ -14,7 +43,6 @@ services:
       # Has to be represented in the environment variable VIRTUAL_PORT below
       - "30334"
     ports:
-      - "30333:30333"
       - "30334:30334"
     external_links:
       - mustekala-geth
