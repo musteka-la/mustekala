@@ -1,4 +1,4 @@
-ipfs-rendezvous-experiment:
+kitsunet-bridge:
   image: dryajov/kitsunet
   restart: always
   expose:
